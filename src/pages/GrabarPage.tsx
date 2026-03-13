@@ -83,7 +83,6 @@ export function GrabarPage() {
 
   // Reference audio controls (when sourceAudio present)
   const [refVolume, setRefVolume] = useState(20);       // 0–100, default 20% ducking
-  const [refLevel, setRefLevel] = useState(0);           // 0–1 real-time level
   const [micLevel, setMicLevel] = useState(0);           // 0–1 real-time level
   const [listenWithRef, setListenWithRef] = useState(false);
 
@@ -100,11 +99,8 @@ export function GrabarPage() {
   const recordedBlobRef  = useRef<Blob | null>(null);
   const recordedUrlRef   = useRef<string | null>(null);
 
-  // Refs — reference audio
+  // Refs — reference audio (plain HTMLAudioElement — no WebAudio needed)
   const refAudioRef      = useRef<HTMLAudioElement | null>(null);
-  const refGainNodeRef   = useRef<GainNode | null>(null);
-  const refAnalyserRef   = useRef<AnalyserNode | null>(null);
-  const refSrcNodeRef    = useRef<MediaElementAudioSourceNode | null>(null);
 
   // Ref — preview "escuchar con referencia"
   const previewRecAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -132,28 +128,17 @@ export function GrabarPage() {
   }
 
   function applyRefVolume(vol: number) {
-    // vol: 0–100
-    if (refGainNodeRef.current) {
-      refGainNodeRef.current.gain.setTargetAtTime(vol / 100, refGainNodeRef.current.context.currentTime, 0.1);
-    }
-    if (refAudioRef.current) {
-      refAudioRef.current.volume = vol / 100;
-    }
+    if (refAudioRef.current) refAudioRef.current.volume = vol / 100;
   }
 
   // ── Start waveform animation ──────────────────────────────────────────────────
 
   function startAnimLoop() {
     function loop() {
-      // Mic canvas
       if (analyserRef.current && canvasRef.current) {
         lastBarsRef.current = Array.from(new Uint8Array(analyserRef.current.frequencyBinCount)).map(v => (v / 255) * 100);
         drawCanvas(canvasRef.current, analyserRef.current, 'rgba(74,222,128,0.8)');
         setMicLevel(getRmsLevel(analyserRef.current));
-      }
-      // Reference level
-      if (refAnalyserRef.current) {
-        setRefLevel(getRmsLevel(refAnalyserRef.current));
       }
       animFrameRef.current = requestAnimationFrame(loop);
     }
@@ -194,40 +179,22 @@ export function GrabarPage() {
 
     const audioCtx = new AudioContext();
     audioCtxRef.current = audioCtx;
+    // Resume in case browser created it suspended
+    audioCtx.resume().catch(() => {});
 
     // ── Mic analyser (for waveform + level meter) — NOT connected to destination
     const micAnalyser = audioCtx.createAnalyser();
     micAnalyser.fftSize = 128;
     analyserRef.current = micAnalyser;
     audioCtx.createMediaStreamSource(stream).connect(micAnalyser);
-    // micAnalyser is intentionally NOT connected to destination — no monitoring feedback
+    // micAnalyser NOT connected to destination — no mic monitoring feedback
 
-    // ── Reference audio via AudioContext (NOT recorded)
+    // ── Reference audio: plain HTMLAudioElement, bypasses CORS WebAudio restrictions
     if (sourceAudio?.audioUrl && refAudioRef.current) {
-      try {
-        // Only create source node once per AudioContext
-        if (!refSrcNodeRef.current) {
-          const srcNode = audioCtx.createMediaElementSource(refAudioRef.current);
-          refSrcNodeRef.current = srcNode;
-          const gainNode = audioCtx.createGain();
-          gainNode.gain.value = refVolume / 100;
-          refGainNodeRef.current = gainNode;
-          const refAnalyser = audioCtx.createAnalyser();
-          refAnalyser.fftSize = 128;
-          refAnalyserRef.current = refAnalyser;
-          srcNode.connect(gainNode);
-          gainNode.connect(refAnalyser);
-          refAnalyser.connect(audioCtx.destination); // reference goes to speakers, NOT to MediaRecorder
-        }
-        // Smooth duck to configured volume
-        if (refGainNodeRef.current) {
-          refGainNodeRef.current.gain.setTargetAtTime(refVolume / 100, audioCtx.currentTime, 0.3);
-        }
-        refAudioRef.current.loop = true;
-        refAudioRef.current.play().catch(() => {});
-      } catch {
-        // Silently fail if reference audio can't load
-      }
+      refAudioRef.current.volume = refVolume / 100;
+      refAudioRef.current.loop = true;
+      refAudioRef.current.currentTime = 0;
+      refAudioRef.current.play().catch(() => {});
     }
 
     // ── MediaRecorder — only records the mic stream
@@ -282,14 +249,10 @@ export function GrabarPage() {
 
     // Pause reference audio
     stopRefAudio();
-    setRefLevel(0);
     setMicLevel(0);
 
     // Close AudioContext
     if (audioCtxRef.current) { audioCtxRef.current.close(); audioCtxRef.current = null; }
-    refSrcNodeRef.current = null;
-    refGainNodeRef.current = null;
-    refAnalyserRef.current = null;
 
     setIsRecording(false);
     if (autoStopped) setRecordError('Límite de 10 minutos alcanzado. La grabación se detuvo automáticamente.');
@@ -696,10 +659,9 @@ export function GrabarPage() {
           </div>
         )}
 
-        {/* Dual level meters — visible while recording */}
+        {/* Mic level meter — visible while recording */}
         {isRecording && (
-          <div className="mb-4 space-y-2">
-            <LevelMeter label="Referencia" level={refLevel} color="cyan" />
+          <div className="mb-4">
             <LevelMeter label="Tu grabación" level={micLevel} color="green" />
           </div>
         )}
