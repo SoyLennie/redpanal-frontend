@@ -216,6 +216,21 @@ export function uploadAudio(
   });
 }
 
+export async function fetchIsFollowing(username: string): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${API_BASE}/users/${encodeURIComponent(username)}/is-following/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.following === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchMyFollowing(): Promise<string[]> {
   const token = getToken();
   if (!token) return [];

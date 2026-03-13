@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { AudioCard } from '@/components/AudioCard';
 import { useAppStore } from '@/store/appStore';
-import { GitBranch, Music2, Heart, LogIn, UserPlus, UserCheck, Loader2 } from 'lucide-react';
-import { useParams } from 'react-router-dom';
-import { fetchUserAudios, fetchAudioList, fetchUserStats, followUser, unfollowUser, fetchMyFollowing } from '@/api/audio';
+import { GitBranch, Music2, Heart, LogIn, UserPlus, UserCheck, Loader2, Settings } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { fetchUserAudios, fetchAudioList, fetchUserStats, followUser, unfollowUser, fetchMyFollowing, fetchIsFollowing } from '@/api/audio';
 import type { UserStats } from '@/api/audio';
 import { fetchGlobalActivity } from '@/api/activity';
 import type { AudioTrack } from '@/types';
@@ -13,6 +13,7 @@ import { ActivityItem } from '@/components/ActivityItem';
 export function PerfilPage() {
   const { username } = useParams<{ username: string }>();
   const { user, openLoginModal } = useAppStore();
+  const navigate = useNavigate();
 
   const isOwnProfile = !!user && user.username === username;
   const profileUsername = username ?? user?.username;
@@ -23,26 +24,27 @@ export function PerfilPage() {
   const [loading, setLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!profileUsername) return;
     setLoading(true);
     setTracks([]);
     setStats(null);
+    setNotFound(false);
     Promise.all([
       fetchUserAudios(profileUsername),
       fetchUserStats(profileUsername),
-      !isOwnProfile && user ? fetchMyFollowing() : Promise.resolve([]),
+      !isOwnProfile ? fetchIsFollowing(profileUsername) : Promise.resolve(false),
     ])
       .then(([{ count, tracks: t }, userStats, following]) => {
+        if (!userStats) { setNotFound(true); return; }
         setAudioCount(count);
         setTracks(t);
         setStats(userStats);
-        if (Array.isArray(following)) {
-          setIsFollowing(following.includes(profileUsername));
-        }
+        setIsFollowing(following as boolean);
       })
-      .catch(() => {})
+      .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [profileUsername, isOwnProfile]);
 
@@ -61,6 +63,14 @@ export function PerfilPage() {
         >
           Iniciar sesión
         </button>
+      </div>
+    );
+  }
+
+  if (notFound && !loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center pb-32">
+        <p className="text-gray-500 text-sm">Usuario @{profileUsername} no encontrado.</p>
       </div>
     );
   }
@@ -92,7 +102,14 @@ export function PerfilPage() {
         </div>
         <h1 className="text-xl font-bold text-white">@{profileUsername}</h1>
 
-        {!isOwnProfile && (
+        {isOwnProfile ? (
+          <button
+            onClick={() => navigate('/about')}
+            className="mt-3 inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-colors"
+          >
+            <Settings className="w-4 h-4" /> Editar perfil
+          </button>
+        ) : user ? (
           <button
             onClick={handleFollow}
             disabled={followLoading}
@@ -103,6 +120,13 @@ export function PerfilPage() {
             }`}
           >
             {isFollowing ? <><UserCheck className="w-4 h-4" /> Siguiendo</> : <><UserPlus className="w-4 h-4" /> Seguir</>}
+          </button>
+        ) : (
+          <button
+            onClick={() => openLoginModal()}
+            className="mt-3 inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-colors"
+          >
+            <LogIn className="w-4 h-4" /> Seguir
           </button>
         )}
 
