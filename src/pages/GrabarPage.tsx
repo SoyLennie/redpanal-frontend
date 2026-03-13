@@ -212,7 +212,7 @@ export function GrabarPage() {
   }
 
   const handlePublish = async () => {
-    if (!user) { openLoginModal(); return; }
+    if (!user) { openLoginModal(() => handlePublish()); return; }
     if (!selectedFile || !name) return;
 
     console.log('name value at submit:', JSON.stringify(name));
@@ -270,7 +270,7 @@ export function GrabarPage() {
       const e = err as UploadError;
       setStep('metadata');
       if (e.status === 403 || e.status === 401) {
-        openLoginModal();
+        openLoginModal(() => handlePublish());
       } else {
         let msg = 'Error al publicar. Intentá de nuevo.';
         try {

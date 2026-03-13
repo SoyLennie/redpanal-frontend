@@ -16,6 +16,7 @@ interface AppStore {
   progress: number;
   user: AuthUser | null;
   loginModalOpen: boolean;
+  loginCallback: (() => void) | null;
 
   toggleMenu: () => void;
   closeMenu: () => void;
@@ -28,7 +29,7 @@ interface AppStore {
   prevTrack: () => void;
   setAuth: (token: string, user: AuthUser) => void;
   clearAuth: () => void;
-  openLoginModal: () => void;
+  openLoginModal: (callback?: () => void) => void;
   closeLoginModal: () => void;
 }
 
@@ -44,6 +45,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     catch { return null; }
   })(),
   loginModalOpen: false,
+  loginCallback: null,
 
   toggleMenu: () => set((s) => ({ menuOpen: !s.menuOpen })),
   closeMenu: () => set({ menuOpen: false }),
@@ -82,6 +84,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ user: null });
   },
 
-  openLoginModal: () => set({ loginModalOpen: true }),
-  closeLoginModal: () => set({ loginModalOpen: false }),
+  openLoginModal: (callback) => set({ loginModalOpen: true, loginCallback: callback ?? null }),
+  closeLoginModal: () => set({ loginModalOpen: false, loginCallback: null }),
 }));

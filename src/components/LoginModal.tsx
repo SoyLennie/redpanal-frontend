@@ -5,7 +5,7 @@ import { useAppStore } from '@/store/appStore';
 const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
 
 export function LoginModal() {
-  const { loginModalOpen, closeLoginModal, setAuth } = useAppStore();
+  const { loginModalOpen, closeLoginModal, setAuth, loginCallback } = useAppStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,6 +30,7 @@ export function LoginModal() {
         setUsername('');
         setPassword('');
         closeLoginModal();
+        loginCallback?.();
       } else if (res.status === 400) {
         setError('Usuario o contraseña incorrectos');
       } else {

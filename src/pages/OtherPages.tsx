@@ -56,7 +56,7 @@ export function PerfilPage() {
         <h2 className="text-white font-semibold mb-2">Tu perfil</h2>
         <p className="text-gray-500 text-sm mb-5">Iniciá sesión para ver tus audios y estadísticas</p>
         <button
-          onClick={openLoginModal}
+          onClick={() => openLoginModal()}
           className="px-6 py-2.5 rounded-full gradient-cyan-lime text-navy-900 text-sm font-semibold"
         >
           Iniciar sesión
@@ -188,6 +188,24 @@ export function ComunidadPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleFollowToggle = async (username: string) => {
+    if (!user) { openLoginModal(() => handleFollowToggle(username)); return; }
+    setFollowLoading(prev => new Set(prev).add(username));
+    try {
+      if (followed.has(username)) {
+        await unfollowUser(username);
+        setFollowed(prev => { const s = new Set(prev); s.delete(username); return s; });
+      } else {
+        await followUser(username);
+        setFollowed(prev => new Set(prev).add(username));
+      }
+    } catch (err) {
+      console.error('[follow] error:', err);
+    } finally {
+      setFollowLoading(prev => { const s = new Set(prev); s.delete(username); return s; });
+    }
+  };
+
   // Extract up to 5 unique users from recent tracks
   const musicians = useMemo<Musician[]>(() => {
     const seen = new Set<string>();
@@ -258,23 +276,7 @@ export function ComunidadPage() {
                 </div>
                 <button
                   disabled={followLoading.has(m.username)}
-                  onClick={async () => {
-                    if (!user) { openLoginModal(); return; }
-                    setFollowLoading(prev => new Set(prev).add(m.username));
-                    try {
-                      if (followed.has(m.username)) {
-                        await unfollowUser(m.username);
-                        setFollowed(prev => { const s = new Set(prev); s.delete(m.username); return s; });
-                      } else {
-                        await followUser(m.username);
-                        setFollowed(prev => new Set(prev).add(m.username));
-                      }
-                    } catch (err) {
-                      console.error('[follow] error:', err);
-                    } finally {
-                      setFollowLoading(prev => { const s = new Set(prev); s.delete(m.username); return s; });
-                    }
-                  }}
+                  onClick={() => handleFollowToggle(m.username)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 disabled:opacity-50 ${
                     followed.has(m.username)
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'

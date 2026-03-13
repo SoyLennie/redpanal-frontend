@@ -28,7 +28,7 @@ export function InteraccionesPage() {
         <h2 className="text-white font-semibold mb-2">Tus interacciones</h2>
         <p className="text-gray-500 text-sm mb-5">Iniciá sesión para ver tu actividad</p>
         <button
-          onClick={openLoginModal}
+          onClick={() => openLoginModal()}
           className="px-6 py-2.5 rounded-full gradient-cyan-lime text-navy-900 text-sm font-semibold"
         >
           Iniciar sesión

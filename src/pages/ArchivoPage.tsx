@@ -301,31 +301,26 @@ export function ArchivoPage() {
               })
             )}
 
-            {user ? (
-              <div className="mt-4 space-y-2">
-                <textarea
-                  value={commentInput}
-                  onChange={e => setCommentInput(e.target.value)}
-                  placeholder="Comentá, mencioná con @ o taggeá con #"
-                  rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50 resize-none"
-                />
-                {commentError && <p className="text-xs text-rose-400">{commentError}</p>}
-                <button
-                  onClick={handlePostComment}
-                  disabled={!commentInput.trim() || postingComment}
-                  className="px-5 py-2 rounded-xl gradient-cyan-lime text-navy-900 font-semibold text-sm disabled:opacity-40"
-                >
-                  {postingComment ? 'Publicando...' : 'Comentar'}
-                </button>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 py-3 text-center">
-                <button onClick={openLoginModal} className="text-cyan-400 hover:underline">
-                  Iniciá sesión
-                </button>{' '}para comentar
-              </p>
-            )}
+            <div className="mt-4 space-y-2">
+              <textarea
+                value={commentInput}
+                onChange={e => setCommentInput(e.target.value)}
+                placeholder="Comentá, mencioná con @ o taggeá con #"
+                rows={2}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50 resize-none"
+              />
+              {commentError && <p className="text-xs text-rose-400">{commentError}</p>}
+              <button
+                onClick={() => {
+                  if (!user) { openLoginModal(() => handlePostComment()); return; }
+                  handlePostComment();
+                }}
+                disabled={!commentInput.trim() || postingComment}
+                className="px-5 py-2 rounded-xl gradient-cyan-lime text-navy-900 font-semibold text-sm disabled:opacity-40"
+              >
+                {postingComment ? 'Publicando...' : 'Comentar'}
+              </button>
+            </div>
           </div>
         )}
 

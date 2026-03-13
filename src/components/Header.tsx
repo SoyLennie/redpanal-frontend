@@ -42,7 +42,7 @@ export function Header() {
             </button>
           ) : (
             <button
-              onClick={openLoginModal}
+              onClick={() => openLoginModal()}
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
               title="Iniciar sesión"
             >
