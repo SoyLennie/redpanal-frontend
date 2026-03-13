@@ -71,6 +71,15 @@ export async function fetchAudioList(
   return results.map(mapAudio);
 }
 
+export async function fetchAudioSearch(query: string, pageSize = 40): Promise<AudioTrack[]> {
+  const qs = new URLSearchParams({ search: query, page_size: String(pageSize) });
+  const res = await fetch(`${API_BASE}/audio/list/?${qs}`);
+  if (!res.ok) throw new Error('Error en búsqueda');
+  const data = await res.json();
+  const results = Array.isArray(data) ? data : (data.results ?? []);
+  return results.map(mapAudio);
+}
+
 export interface UserStats {
   username: string;
   followers_count: number;

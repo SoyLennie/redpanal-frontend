@@ -33,8 +33,6 @@ export function DescubriPage() {
   const [selectedTag, setSelectedTag] = useState<PopularTag | null>(null);
   const [tagSheetOpen, setTagSheetOpen] = useState(false);
 
-  // Search
-  const [search, setSearch] = useState('');
   const [placeholderIndex] = useState(() => Math.floor(Math.random() * placeholders.length));
 
   // Fetch popular tags once
@@ -70,32 +68,9 @@ export function DescubriPage() {
   const visiblePills = popularTags.slice(0, PILLS_VISIBLE);
   const hasMoreTags = popularTags.length > PILLS_VISIBLE;
 
-  // All tracks for search (combine novedades + activos, deduplicate)
-  const allLocalTracks = useMemo(() => {
-    const seen = new Set<string>();
-    return [...novedades, ...activos].filter(t => {
-      if (seen.has(t.id)) return false;
-      seen.add(t.id);
-      return true;
-    });
-  }, [novedades, activos]);
-
-  const searchResults = useMemo(() => {
-    if (!search || search.length < 2) return null;
-    const q = search.toLowerCase();
-    const pool = selectedTag ? tagTracks : allLocalTracks;
-    return {
-      audios: pool.filter(t =>
-        t.title.toLowerCase().includes(q) || t.tags.some(tag => tag.includes(q))
-      ).slice(0, 4),
-      musicians: [...new Set(
-        pool.filter(t => t.artist.toLowerCase().includes(q)).map(t => t.artist)
-      )].slice(0, 3),
-      tags: [...new Set(
-        pool.flatMap(t => t.tags).filter(tag => tag.includes(q))
-      )].slice(0, 5),
-    };
-  }, [search, allLocalTracks, tagTracks, selectedTag]);
+  const handleSearchInput = (value: string) => {
+    if (value.trim()) navigate(`/buscar?q=${encodeURIComponent(value.trim())}`);
+  };
 
   const handleTagClick = (tag: PopularTag) => {
     setSelectedTag(prev => prev?.slug === tag.slug ? null : tag);
@@ -118,16 +93,12 @@ export function DescubriPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+              readOnly
+              onFocus={() => navigate('/buscar')}
+              onChange={e => handleSearchInput(e.target.value)}
               placeholder={placeholders[placeholderIndex]}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 transition-colors cursor-pointer"
             />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
-            )}
           </div>
         </div>
 
@@ -167,60 +138,8 @@ export function DescubriPage() {
         </div>
       </div>
 
-      {/* Search results */}
-      {searchResults && search.length >= 2 && (
-        <div className="px-4 space-y-4 pt-2">
-          {searchResults.audios.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">🎵 Audios</p>
-              <div className="space-y-2">
-                {searchResults.audios.map(t => (
-                  <AudioCard key={t.id} track={t} variant="large" />
-                ))}
-              </div>
-            </div>
-          )}
-          {searchResults.musicians.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">👤 Músicos</p>
-              <div className="flex flex-wrap gap-2">
-                {searchResults.musicians.map(m => (
-                  <span key={m} className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-cyan-400">{m}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {searchResults.tags.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">🏷 Tags</p>
-              <div className="flex flex-wrap gap-2">
-                {searchResults.tags.map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => {
-                      const found = popularTags.find(t => t.slug === tag || t.name === tag);
-                      if (found) handleTagClick(found);
-                      setSearch('');
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:border-cyan-500/40 transition-colors"
-                  >
-                    #{tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {searchResults.audios.length === 0 && searchResults.musicians.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>No encontramos resultados para "{search}"</p>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Main content */}
-      {(!search || search.length < 2) && (
-        <div className="pt-2">
+      <div className="pt-2">
           {isLoading ? (
             <div className="px-4 space-y-6">
               {[1, 2].map(i => (
@@ -264,7 +183,6 @@ export function DescubriPage() {
             </div>
           )}
         </div>
-      )}
 
       {/* "+ más tags" bottom sheet */}
       {tagSheetOpen && (

@@ -13,6 +13,7 @@ import { GrabarPage } from '@/pages/GrabarPage';
 import { ArchivoPage } from '@/pages/ArchivoPage';
 import { InteraccionesPage } from '@/pages/InteraccionesPage';
 import { PerfilPage, ComunidadPage, RedPanalPage } from '@/pages/OtherPages';
+import { SearchPage } from '@/pages/SearchPage';
 
 function Layout() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route element={<Layout />}>
           <Route index element={<DescubriPage />} />
           <Route path="/descubri" element={<DescubriPage />} />
+          <Route path="/buscar" element={<SearchPage />} />
           <Route path="/grabar" element={<GrabarPage />} />
           <Route path="/asamblea" element={<AsambleaPage />} />
           <Route path="/interacciones" element={<InteraccionesPage />} />
