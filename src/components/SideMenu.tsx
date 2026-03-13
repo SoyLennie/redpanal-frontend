@@ -1,4 +1,5 @@
 import { X, Info, HelpCircle, Mail, Github, Heart, LogIn, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 
 const menuItems = [
@@ -9,11 +10,12 @@ const menuItems = [
 ];
 
 export function SideMenu() {
-  const { menuOpen, toggleMenu, setPage, closeMenu, user, openLoginModal, clearAuth } = useAppStore();
+  const navigate = useNavigate();
+  const { menuOpen, toggleMenu, closeMenu, user, openLoginModal, clearAuth } = useAppStore();
 
   const handleItemClick = (action: string) => {
     if (action === 'redpanal') {
-      setPage('redpanal');
+      navigate('/redpanal');
     }
     closeMenu();
   };

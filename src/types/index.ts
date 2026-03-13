@@ -1,5 +1,3 @@
-export type PageId = 'descubri' | 'comunidad' | 'asamblea' | 'interacciones' | 'perfil' | 'redpanal' | 'grabar' | 'archivo';
-
 export type AudioType = 'loop' | 'pista' | 'cancion' | 'sample';
 export type AudioStatus = 'draft' | 'processing' | 'published';
 

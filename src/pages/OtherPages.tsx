@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { AudioCard } from '@/components/AudioCard';
 import { useAppStore } from '@/store/appStore';
-import { GitBranch, Music2, Heart, LogIn, UserPlus, UserCheck } from 'lucide-react';
+import { GitBranch, Music2, Heart, LogIn, UserPlus, UserCheck, Loader2 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { fetchUserAudios, fetchAudioList, fetchUserStats, followUser, unfollowUser, fetchMyFollowing } from '@/api/audio';
 import type { UserStats } from '@/api/audio';
 import { fetchGlobalActivity } from '@/api/activity';
@@ -10,29 +11,43 @@ import type { Activity } from '@/api/activity';
 import { ActivityItem } from '@/components/ActivityItem';
 
 export function PerfilPage() {
+  const { username } = useParams<{ username: string }>();
   const { user, openLoginModal } = useAppStore();
+
+  const isOwnProfile = !!user && user.username === username;
+  const profileUsername = username ?? user?.username;
+
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [audioCount, setAudioCount] = useState(0);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!profileUsername) return;
     setLoading(true);
+    setTracks([]);
+    setStats(null);
     Promise.all([
-      fetchUserAudios(user.username),
-      fetchUserStats(user.username),
+      fetchUserAudios(profileUsername),
+      fetchUserStats(profileUsername),
+      !isOwnProfile && user ? fetchMyFollowing() : Promise.resolve([]),
     ])
-      .then(([{ count, tracks: t }, userStats]) => {
+      .then(([{ count, tracks: t }, userStats, following]) => {
         setAudioCount(count);
         setTracks(t);
         setStats(userStats);
+        if (Array.isArray(following)) {
+          setIsFollowing(following.includes(profileUsername));
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [profileUsername, isOwnProfile]);
 
-  if (!user) {
+  // No username and not logged in — prompt login
+  if (!profileUsername) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center pb-32">
         <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
@@ -50,20 +65,47 @@ export function PerfilPage() {
     );
   }
 
-  const initial = user.username[0].toUpperCase();
+  const initial = profileUsername[0].toUpperCase();
+
+  const handleFollow = async () => {
+    if (!user) { openLoginModal(); return; }
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await unfollowUser(profileUsername);
+        setIsFollowing(false);
+        setStats(s => s ? { ...s, followers_count: s.followers_count - 1 } : s);
+      } else {
+        await followUser(profileUsername);
+        setIsFollowing(true);
+        setStats(s => s ? { ...s, followers_count: s.followers_count + 1 } : s);
+      }
+    } catch { /* ignore */ }
+    finally { setFollowLoading(false); }
+  };
 
   return (
     <div className="pb-32">
-      {/* Header */}
       <div className="px-4 pt-6 pb-5 text-center border-b border-white/10">
-        {user.avatar_url ? (
-          <img src={user.avatar_url} alt={user.username} className="w-20 h-20 rounded-full mx-auto object-cover mb-3" />
-        ) : (
-          <div className="w-20 h-20 rounded-full gradient-cyan-lime mx-auto flex items-center justify-center mb-3">
-            <span className="text-navy-900 font-bold text-2xl">{initial}</span>
-          </div>
+        <div className="w-20 h-20 rounded-full gradient-cyan-lime mx-auto flex items-center justify-center mb-3">
+          <span className="text-navy-900 font-bold text-2xl">{initial}</span>
+        </div>
+        <h1 className="text-xl font-bold text-white">@{profileUsername}</h1>
+
+        {!isOwnProfile && (
+          <button
+            onClick={handleFollow}
+            disabled={followLoading}
+            className={`mt-3 inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${
+              isFollowing
+                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                : 'gradient-cyan-lime text-navy-900'
+            }`}
+          >
+            {isFollowing ? <><UserCheck className="w-4 h-4" /> Siguiendo</> : <><UserPlus className="w-4 h-4" /> Seguir</>}
+          </button>
         )}
-        <h1 className="text-xl font-bold text-white">@{user.username}</h1>
+
         <div className="flex justify-center gap-8 mt-4 text-sm">
           {[
             { label: 'Audios',     val: audioCount },
@@ -78,7 +120,6 @@ export function PerfilPage() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-2 px-4 py-4 border-b border-white/10">
         {[
           { icon: Music2,    label: 'Subidos', val: audioCount, color: 'text-cyan-400' },
@@ -93,17 +134,18 @@ export function PerfilPage() {
         ))}
       </div>
 
-      {/* Tracks */}
       <div className="px-4 pt-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Mis audios</p>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          {isOwnProfile ? 'Mis audios' : `Audios de @${profileUsername}`}
+        </p>
         {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="aspect-video rounded-2xl bg-white/5 animate-pulse" />
-            ))}
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
           </div>
         ) : tracks.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-8">Todavía no subiste ningún audio.</p>
+          <p className="text-sm text-gray-500 text-center py-8">
+            {isOwnProfile ? 'Todavía no subiste ningún audio.' : 'Este usuario no tiene audios todavía.'}
+          </p>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {tracks.map(track => (

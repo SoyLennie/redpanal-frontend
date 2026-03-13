@@ -46,6 +46,16 @@ export async function fetchPeaks(pkId: number): Promise<PeaksResponse> {
   return res.json();
 }
 
+export async function fetchAudioBySlug(slug: string): Promise<AudioTrack | null> {
+  try {
+    const res = await fetch(`${API_BASE}/audio/by-slug/${encodeURIComponent(slug)}/`);
+    if (!res.ok) return null;
+    return mapAudio(await res.json());
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchAudioList(
   pageSize = 100,
   tag?: string,
@@ -161,11 +171,13 @@ export function uploadAudio(
   const fd = new FormData();
   fd.append('audio', file);
   fd.append('name', fields.name);
-  if (fields.use_type)    fd.append('use_type', fields.use_type);
+  fd.append('use_type', fields.use_type ?? 'other');
   if (fields.genre)       fd.append('genre', fields.genre);
   if (fields.instrument)  fd.append('instrument', fields.instrument);
   if (fields.description) fd.append('description', fields.description);
   fd.append('license', fields.license ?? 'CC-BY-SA-4.0');
+  // taggit_serializer requires the field to be present even when empty
+  fd.append('tags', '[]');
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();

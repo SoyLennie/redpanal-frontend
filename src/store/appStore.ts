@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { PageId, AudioTrack } from '@/types';
+import type { AudioTrack } from '@/types';
 
 interface AuthUser {
   id: number;
@@ -8,7 +8,6 @@ interface AuthUser {
 }
 
 interface AppStore {
-  currentPage: PageId;
   menuOpen: boolean;
   currentTrack: AudioTrack | null;
   isPlaying: boolean;
@@ -18,7 +17,6 @@ interface AppStore {
   user: AuthUser | null;
   loginModalOpen: boolean;
 
-  setPage: (page: PageId) => void;
   toggleMenu: () => void;
   closeMenu: () => void;
   playTrack: (track: AudioTrack, contextQueue?: AudioTrack[]) => void;
@@ -35,7 +33,6 @@ interface AppStore {
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
-  currentPage: 'descubri',
   menuOpen: false,
   currentTrack: null,
   isPlaying: false,
@@ -48,7 +45,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   })(),
   loginModalOpen: false,
 
-  setPage: (page) => set({ currentPage: page, playerExpanded: false }),
   toggleMenu: () => set((s) => ({ menuOpen: !s.menuOpen })),
   closeMenu: () => set({ menuOpen: false }),
   

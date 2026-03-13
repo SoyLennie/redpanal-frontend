@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Search, X, Mic, Play, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AudioCard } from '@/components/AudioCard';
 import { useAppStore } from '@/store/appStore';
 import { fetchAudioList, fetchPopularTags } from '@/api/audio';
@@ -16,7 +17,7 @@ const placeholders = [
 ];
 
 export function DescubriPage() {
-  const { setPage } = useAppStore();
+  const navigate = useNavigate();
 
   // Home sections (no tag active)
   const [novedades, setNovedades] = useState<AudioTrack[]>([]);
@@ -243,7 +244,7 @@ export function DescubriPage() {
               </h3>
               <p className="text-gray-500 text-sm mb-4">¿Querés ser el primero?</p>
               <button
-                onClick={() => setPage('grabar')}
+                onClick={() => navigate('/grabar')}
                 className="px-6 py-2.5 rounded-full gradient-cyan-lime text-navy-900 text-sm font-semibold"
               >
                 Grabar ahora

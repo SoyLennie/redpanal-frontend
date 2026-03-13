@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, Heart, Share2, Download, GitBranch, ChevronRight, Users } from 'lucide-react';
+import { Play, Pause, Heart, Share2, Download, GitBranch, ChevronRight, Users, Loader2 } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
-import { fetchComments, postComment, fetchCollabTree, fetchPeaks } from '@/api/audio';
+import { fetchComments, postComment, fetchCollabTree, fetchPeaks, fetchAudioBySlug } from '@/api/audio';
 import type { Comment, CollabNode } from '@/api/audio';
+import type { AudioTrack } from '@/types';
 
 type Tab = 'historia' | 'comentarios' | 'info';
 type CollabStep = null | 'choose' | 'record-layer' | 'upload-version';
 
-// Flat placeholder shown while real peaks are loading
 const WAVEFORM_PLACEHOLDER = Array.from({ length: 50 }, () => 0.15);
 
 const typeColors: Record<string, string> = {
@@ -29,18 +30,15 @@ function timeAgo(dateStr: string): string {
 }
 
 export function ArchivoPage() {
+  const { slug } = useParams<{ username: string; slug: string }>();
   const { currentTrack, isPlaying, playTrack, togglePlay, user, openLoginModal } = useAppStore();
 
-  if (!currentTrack) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center pb-32">
-        <p className="text-gray-500 text-sm">Seleccioná un audio para ver su archivo.</p>
-      </div>
-    );
-  }
+  const [track, setTrack] = useState<AudioTrack | null>(
+    // Use currentTrack as initial state if slug matches — avoids loading flash
+    currentTrack?.id === slug ? currentTrack : null
+  );
+  const [loadingTrack, setLoadingTrack] = useState(!track);
 
-  const track = currentTrack;
-  const slug = track.id;
   const [tab, setTab] = useState<Tab>('historia');
   const [liked, setLiked] = useState(false);
   const [collabStep, setCollabStep] = useState<CollabStep>(null);
@@ -54,9 +52,27 @@ export function ArchivoPage() {
   const [loadingTree, setLoadingTree] = useState(false);
   const [waveform, setWaveform] = useState<number[]>(WAVEFORM_PLACEHOLDER);
   const [loadingWaveform, setLoadingWaveform] = useState(false);
-  const isCurrentPlaying = isPlaying && currentTrack?.id === track.id;
 
+  // Fetch audio data when slug changes
   useEffect(() => {
+    if (!slug) return;
+    // If currentTrack matches, use it directly; still fetch in background to get full data
+    if (currentTrack?.id !== slug) {
+      setTrack(null);
+      setLoadingTrack(true);
+    }
+    fetchAudioBySlug(slug).then(data => {
+      if (data) {
+        setTrack(data);
+        // Start playing if nothing is currently playing this track
+        if (currentTrack?.id !== slug) playTrack(data);
+      }
+    }).finally(() => setLoadingTrack(false));
+  }, [slug]);
+
+  // Fetch comments, collab tree and waveform when slug/track changes
+  useEffect(() => {
+    if (!slug) return;
     setLoadingComments(true);
     fetchComments(slug)
       .then(setComments)
@@ -65,6 +81,7 @@ export function ArchivoPage() {
   }, [slug]);
 
   useEffect(() => {
+    if (!slug) return;
     setLoadingTree(true);
     setCollabRoot(null);
     fetchCollabTree(slug)
@@ -73,10 +90,11 @@ export function ArchivoPage() {
   }, [slug]);
 
   useEffect(() => {
-    if (!track.pkId) return;
+    const pkId = track?.pkId;
+    if (!pkId) return;
     setWaveform(WAVEFORM_PLACEHOLDER);
     setLoadingWaveform(true);
-    fetchPeaks(track.pkId)
+    fetchPeaks(pkId)
       .then(({ peaks }) => {
         if (!peaks.length) return;
         const max = Math.max(...peaks);
@@ -85,10 +103,12 @@ export function ArchivoPage() {
       })
       .catch(() => {})
       .finally(() => setLoadingWaveform(false));
-  }, [track.pkId]);
+  }, [track?.pkId]);
+
+  const isCurrentPlaying = isPlaying && currentTrack?.id === slug;
 
   const handlePostComment = async () => {
-    if (!commentInput.trim() || postingComment) return;
+    if (!slug || !commentInput.trim() || postingComment) return;
     setPostingComment(true);
     setCommentError('');
     try {
@@ -103,6 +123,7 @@ export function ArchivoPage() {
   };
 
   const handlePlay = () => {
+    if (!track) return;
     if (currentTrack?.id === track.id) {
       togglePlay();
     } else {
@@ -115,11 +136,26 @@ export function ArchivoPage() {
     setProgress((e.clientX - rect.left) / rect.width);
   };
 
+  if (loadingTrack) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center pb-32">
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!track) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center pb-32">
+        <p className="text-gray-500 text-sm">Audio no encontrado.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-40 min-h-screen">
-      {/* Waveform + Player - always visible top */}
+      {/* Waveform + Player */}
       <div className="px-4 pt-4 pb-4 border-b border-white/10">
-        {/* Track identity */}
         <div className="flex items-start gap-3 mb-4">
           <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${typeColors[track.type]} flex items-center justify-center flex-shrink-0`}>
             <span className="text-white font-bold text-xs">{track.type.toUpperCase()}</span>
@@ -137,7 +173,6 @@ export function ArchivoPage() {
           </div>
         </div>
 
-        {/* Interactive waveform */}
         <div
           className={`flex items-end gap-px h-16 cursor-pointer rounded-lg overflow-hidden mb-2 transition-opacity duration-500 ${loadingWaveform ? 'opacity-40' : 'opacity-100'}`}
           onClick={handleWaveformClick}
@@ -158,7 +193,6 @@ export function ArchivoPage() {
           <span>{track.duration}</span>
         </div>
 
-        {/* Controls row */}
         <div className="flex items-center gap-3">
           <button
             onClick={handlePlay}
@@ -167,7 +201,6 @@ export function ArchivoPage() {
             {isCurrentPlaying ? <Pause className="w-5 h-5 text-navy-900" /> : <Play className="w-5 h-5 text-navy-900 ml-0.5" />}
           </button>
 
-          {/* COLABORAR - most prominent CTA */}
           <button
             onClick={() => setCollabStep('choose')}
             className="flex-1 py-3 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-cyan-500/25 transition-colors"
@@ -187,7 +220,6 @@ export function ArchivoPage() {
           </button>
         </div>
 
-        {/* Stats row */}
         <div className="flex gap-4 mt-3 text-xs text-gray-500">
           {(track.collaborations || 0) > 0 && (
             <span className="text-cyan-400">{track.collaborations} colaboraciones</span>
@@ -227,7 +259,7 @@ export function ArchivoPage() {
                 <p className="text-xs text-gray-500 mb-4">
                   Árbol de colaboraciones — {countNodes(collabRoot) - 1} derivaciones
                 </p>
-                <CollabTreeNode node={collabRoot} depth={0} currentSlug={slug} />
+                <CollabTreeNode node={collabRoot} depth={0} currentSlug={slug!} />
               </>
             )}
           </div>
@@ -269,7 +301,6 @@ export function ArchivoPage() {
               })
             )}
 
-            {/* Comment form */}
             {user ? (
               <div className="mt-4 space-y-2">
                 <textarea
@@ -279,9 +310,7 @@ export function ArchivoPage() {
                   rows={2}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50 resize-none"
                 />
-                {commentError && (
-                  <p className="text-xs text-rose-400">{commentError}</p>
-                )}
+                {commentError && <p className="text-xs text-rose-400">{commentError}</p>}
                 <button
                   onClick={handlePostComment}
                   disabled={!commentInput.trim() || postingComment}
@@ -326,7 +355,7 @@ export function ArchivoPage() {
         )}
       </div>
 
-      {/* Collaboration flow bottom sheet */}
+      {/* Collaboration bottom sheet */}
       {collabStep && (
         <div className="fixed inset-0 z-50 flex items-end" onClick={() => setCollabStep(null)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -367,7 +396,6 @@ export function ArchivoPage() {
               <>
                 <h3 className="text-white font-bold text-xl mb-1">Grabá una capa</h3>
                 <p className="text-sm text-gray-400 mb-4">El original suena de guía mientras grabás</p>
-                {/* Mini player of original as guide */}
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 mb-5">
                   <button onClick={handlePlay} className="w-9 h-9 rounded-full gradient-cyan-lime flex items-center justify-center flex-shrink-0">
                     {isCurrentPlaying ? <Pause className="w-3.5 h-3.5 text-navy-900" /> : <Play className="w-3.5 h-3.5 text-navy-900" />}
@@ -412,7 +440,8 @@ function countNodes(node: CollabNode): number {
 }
 
 function CollabTreeNode({ node, depth, currentSlug }: { node: CollabNode; depth: number; currentSlug: string }) {
-  const { playTrack, setPage } = useAppStore();
+  const navigate = useNavigate();
+  const { playTrack } = useAppStore();
   const isCurrent = node.slug === currentSlug;
 
   const handleNavigate = () => {
@@ -425,7 +454,7 @@ function CollabTreeNode({ node, depth, currentSlug }: { node: CollabNode; depth:
         type:   node.use_type as 'loop' | 'pista' | 'cancion' | 'sample',
         instrument: '', genre: '', tags: [], duration: '0:00', status: 'published',
       });
-      setPage('archivo');
+      navigate(`/${node.user.username}/${node.slug}`);
     }
   };
 

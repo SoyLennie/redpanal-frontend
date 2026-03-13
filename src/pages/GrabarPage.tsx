@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Mic, Upload, ChevronRight, Loader2, AlertCircle, X, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 import { uploadAudio } from '@/api/audio';
 import type { UploadError } from '@/api/audio';
 import type { AudioTrack } from '@/types';
 
-type Step = 'choose' | 'record' | 'upload' | 'metadata' | 'processing';
+type Step = 'choose' | 'record' | 'preview' | 'upload' | 'metadata' | 'processing';
 
-// Maps frontend display values to backend use_type values
 const FRONTEND_TO_USE_TYPE: Record<string, string> = {
   loop:    'loop',
   sample:  'sample',
@@ -15,7 +15,6 @@ const FRONTEND_TO_USE_TYPE: Record<string, string> = {
   pista:   'track',
 };
 
-// Maps backend use_type to frontend AudioType
 const USE_TYPE_TO_AUDIO_TYPE: Record<string, AudioTrack['type']> = {
   loop:   'loop',
   track:  'pista',
@@ -23,8 +22,31 @@ const USE_TYPE_TO_AUDIO_TYPE: Record<string, AudioTrack['type']> = {
   sample: 'sample',
 };
 
+const MAX_RECORDING_SECONDS = 600; // 10 minutes
+const WAVEFORM_BARS = 40;
+
+function drawCanvas(canvas: HTMLCanvasElement, analyser: AnalyserNode) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(dataArray);
+  const { width, height } = canvas;
+  ctx.clearRect(0, 0, width, height);
+  const step = Math.floor(dataArray.length / WAVEFORM_BARS);
+  const barW = width / WAVEFORM_BARS - 2;
+  for (let i = 0; i < WAVEFORM_BARS; i++) {
+    const val = dataArray[i * step] / 255;
+    const barH = Math.max(3, val * height);
+    const x = i * (barW + 2);
+    const y = (height - barH) / 2;
+    ctx.fillStyle = `rgba(244, 63, 94, ${0.4 + val * 0.6})`;
+    ctx.fillRect(x, y, barW, barH);
+  }
+}
+
 export function GrabarPage() {
-  const { user, openLoginModal, playTrack, setPage } = useAppStore();
+  const navigate = useNavigate();
+  const { user, openLoginModal, playTrack } = useAppStore();
 
   const [step, setStep] = useState<Step>('choose');
   const [name, setName] = useState('');
@@ -38,14 +60,164 @@ export function GrabarPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [recordError, setRecordError] = useState('');
+  const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
+  const [previewBars, setPreviewBars] = useState<number[]>([]);
 
-  const handlePublish = async () => {
-    if (!user) {
-      openLoginModal();
+  // Refs for recording
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastBarsRef = useRef<number[]>([]);
+  const recordedBlobRef = useRef<Blob | null>(null);
+  const recordedUrlRef = useRef<string | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+      if (audioCtxRef.current) audioCtxRef.current.close();
+      if (recordedUrlRef.current) URL.revokeObjectURL(recordedUrlRef.current);
+    };
+  }, []);
+
+  const formatRecTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+  function startWaveformLoop() {
+    const analyser = analyserRef.current;
+    const canvas = canvasRef.current;
+    if (!analyser || !canvas) return;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    function loop() {
+      if (!analyserRef.current || !canvasRef.current) return;
+      analyserRef.current.getByteFrequencyData(dataArray);
+      lastBarsRef.current = Array.from(dataArray).map(v => (v / 255) * 100);
+      drawCanvas(canvasRef.current, analyserRef.current);
+      animFrameRef.current = requestAnimationFrame(loop);
+    }
+
+    animFrameRef.current = requestAnimationFrame(loop);
+  }
+
+  async function startRecording() {
+    setRecordError('');
+
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      setRecordError('Tu browser no soporta grabación directa. Usá la opción de subir archivo.');
       return;
     }
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      const name = (err as Error).name;
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setRecordError('Necesitás permitir el acceso al micrófono para grabar.');
+      } else {
+        setRecordError('No se pudo acceder al micrófono. Verificá que esté conectado.');
+      }
+      return;
+    }
+
+    streamRef.current = stream;
+    chunksRef.current = [];
+
+    const audioCtx = new AudioContext();
+    audioCtxRef.current = audioCtx;
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 128;
+    analyserRef.current = analyser;
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
+
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+      ? 'audio/webm'
+      : MediaRecorder.isTypeSupported('audio/ogg')
+        ? 'audio/ogg'
+        : '';
+
+    const mr = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+    mediaRecorderRef.current = mr;
+
+    mr.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+
+    mr.onstop = () => {
+      const finalMime = mimeType || 'audio/webm';
+      const blob = new Blob(chunksRef.current, { type: finalMime });
+      const url = URL.createObjectURL(blob);
+      recordedBlobRef.current = blob;
+      recordedUrlRef.current = url;
+      setPreviewBars(lastBarsRef.current.length ? lastBarsRef.current : Array.from({ length: WAVEFORM_BARS }, (_, i) => Math.sin(i * 0.4) * 40 + 50));
+      setRecordedUrl(url);
+      setStep('preview');
+    };
+
+    mr.start();
+    setIsRecording(true);
+    setRecordingTime(0);
+
+    // Start animation loop after a tick so canvas is rendered
+    setTimeout(startWaveformLoop, 50);
+
+    timerRef.current = setInterval(() => {
+      setRecordingTime(s => {
+        if (s + 1 >= MAX_RECORDING_SECONDS) {
+          stopRecording(true);
+          return s + 1;
+        }
+        return s + 1;
+      });
+    }, 1000);
+  }
+
+  function stopRecording(autoStopped = false) {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+    if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop();
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+    if (audioCtxRef.current) { audioCtxRef.current.close(); audioCtxRef.current = null; }
+    setIsRecording(false);
+    if (autoStopped) setRecordError('Límite de 10 minutos alcanzado. La grabación se detuvo automáticamente.');
+  }
+
+  function discardRecording() {
+    if (recordedUrlRef.current) { URL.revokeObjectURL(recordedUrlRef.current); recordedUrlRef.current = null; }
+    recordedBlobRef.current = null;
+    setRecordedUrl(null);
+    setPreviewBars([]);
+    setRecordingTime(0);
+    setRecordError('');
+    setStep('record');
+  }
+
+  function handleUseRecording() {
+    const blob = recordedBlobRef.current;
+    if (!blob) return;
+    const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
+    const file = new File([blob], `grabacion-${Date.now()}.${ext}`, { type: blob.type });
+    setSelectedFile(file);
+    setName(`Grabación ${new Date().toLocaleDateString('es-AR')}`);
+    setErrorMessage('');
+    setStep('metadata');
+  }
+
+  const handlePublish = async () => {
+    if (!user) { openLoginModal(); return; }
     if (!selectedFile || !name) return;
 
+    console.log('name value at submit:', JSON.stringify(name));
+    console.log('name length:', name?.length);
+    console.log('selectedFile:', selectedFile?.name);
     setErrorMessage('');
     setStep('processing');
     setUploadStatus('uploading');
@@ -56,14 +228,13 @@ export function GrabarPage() {
         selectedFile,
         {
           name,
-          use_type: FRONTEND_TO_USE_TYPE[audioType] ?? undefined,
+          use_type: FRONTEND_TO_USE_TYPE[audioType] ?? 'other',
           genre:      genre      || undefined,
           instrument: instrument || undefined,
         },
         (percent) => setUploadProgress(percent),
       );
 
-      // Upload done — show processing animation briefly, then navigate
       setUploadStatus('processing');
       setTimeout(() => {
         const newTrack: AudioTrack = {
@@ -81,8 +252,7 @@ export function GrabarPage() {
           collaborations: 0,
         };
         playTrack(newTrack);
-        setPage('archivo');
-        // Reset form for next use
+        navigate(`/${user.username}/${data.slug}`);
         setStep('choose');
         setName('');
         setAudioType('');
@@ -91,6 +261,9 @@ export function GrabarPage() {
         setTags('');
         setSelectedFile(null);
         setUploadProgress(0);
+        if (recordedUrlRef.current) { URL.revokeObjectURL(recordedUrlRef.current); recordedUrlRef.current = null; }
+        recordedBlobRef.current = null;
+        setRecordedUrl(null);
       }, 1500);
 
     } catch (err) {
@@ -102,7 +275,6 @@ export function GrabarPage() {
         let msg = 'Error al publicar. Intentá de nuevo.';
         try {
           const parsed = JSON.parse(e.body);
-          // DRF returns field errors as { field: ["msg"] } or { detail: "msg" }
           const first = Object.values(parsed)[0];
           if (Array.isArray(first)) msg = first[0] as string;
           else if (typeof first === 'string') msg = first;
@@ -113,25 +285,7 @@ export function GrabarPage() {
     }
   };
 
-  const handleRecord = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      setStep('record');
-    } else {
-      setIsRecording(true);
-      setRecordingTime(0);
-      const t = setInterval(() => {
-        setRecordingTime(s => {
-          if (s >= 120) { clearInterval(t); setIsRecording(false); return s; }
-          return s + 1;
-        });
-      }, 1000);
-    }
-  };
-
-  const formatRecTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-
-  // ── Processing / uploading screen ──────────────────────────────────────────
+  // ── Processing screen ───────────────────────────────────────────────────────
   if (step === 'processing') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center pb-32">
@@ -156,7 +310,6 @@ export function GrabarPage() {
             <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
           )}
         </div>
-
         <h2 className="text-xl font-bold text-white mb-2">
           {uploadStatus === 'uploading' ? 'Subiendo tu audio...' : 'Procesando...'}
         </h2>
@@ -165,7 +318,6 @@ export function GrabarPage() {
             ? 'Enviando el archivo al servidor'
             : 'Generando waveform y transcodificando. Ya casi está.'}
         </p>
-
         {uploadStatus === 'processing' && (
           <div className="mt-6 flex items-end gap-1 h-8 justify-center">
             {[...Array(12)].map((_, i) => (
@@ -181,18 +333,16 @@ export function GrabarPage() {
     );
   }
 
-  // ── Metadata / publish form ────────────────────────────────────────────────
+  // ── Metadata form ───────────────────────────────────────────────────────────
   if (step === 'metadata') {
     return (
       <div className="px-4 pt-4 pb-32">
         <button onClick={() => setStep('choose')} className="flex items-center gap-2 text-gray-400 mb-5">
           <ArrowLeft className="w-4 h-4" /> Volver
         </button>
-
         <h1 className="text-xl font-bold text-white mb-1">Publicar audio</h1>
         <p className="text-sm text-gray-400 mb-6">Completá los datos para que otros puedan encontrarlo</p>
 
-        {/* Selected file indicator */}
         {selectedFile && (
           <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
             <span className="text-emerald-400 text-xs font-medium truncate flex-1">
@@ -204,7 +354,6 @@ export function GrabarPage() {
           </div>
         )}
 
-        {/* Error banner */}
         {errorMessage && (
           <div className="flex items-start gap-2 mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30">
             <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
@@ -213,7 +362,6 @@ export function GrabarPage() {
         )}
 
         <div className="space-y-4">
-          {/* Nombre */}
           <div>
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Nombre *</label>
             <input
@@ -225,7 +373,6 @@ export function GrabarPage() {
             />
           </div>
 
-          {/* Tipo */}
           <div>
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Tipo</label>
             <div className="grid grid-cols-2 gap-2">
@@ -245,7 +392,6 @@ export function GrabarPage() {
             </div>
           </div>
 
-          {/* Instrumento */}
           <div>
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Instrumento</label>
             <div className="flex flex-wrap gap-2">
@@ -265,7 +411,6 @@ export function GrabarPage() {
             </div>
           </div>
 
-          {/* Género */}
           <div>
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Género</label>
             <div className="flex flex-wrap gap-2">
@@ -285,7 +430,6 @@ export function GrabarPage() {
             </div>
           </div>
 
-          {/* Tags */}
           <div>
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Tags</label>
             <input
@@ -313,36 +457,99 @@ export function GrabarPage() {
     );
   }
 
-  // ── Record flow ────────────────────────────────────────────────────────────
+  // ── Preview recorded audio ──────────────────────────────────────────────────
+  if (step === 'preview') {
+    return (
+      <div className="px-4 pt-4 pb-32">
+        <button onClick={discardRecording} className="flex items-center gap-2 text-gray-400 mb-5">
+          <ArrowLeft className="w-4 h-4" /> Volver
+        </button>
+
+        <h1 className="text-xl font-bold text-white mb-1">Escuchá tu grabación</h1>
+        <p className="text-sm text-gray-400 mb-6">
+          {formatRecTime(recordingTime)} grabado — revisalo antes de publicar
+        </p>
+
+        {/* Static waveform snapshot */}
+        <div className="flex items-end gap-1 h-16 mb-5 px-2">
+          {previewBars.map((h, i) => (
+            <div
+              key={i}
+              className="flex-1 bg-rose-400/60 rounded-sm"
+              style={{ height: `${Math.max(4, h)}%` }}
+            />
+          ))}
+        </div>
+
+        {/* Audio preview player */}
+        {recordedUrl && (
+          <audio
+            src={recordedUrl}
+            controls
+            className="w-full mb-6 rounded-xl"
+            style={{ accentColor: '#f43f5e' }}
+          />
+        )}
+
+        <div className="space-y-3">
+          <button
+            onClick={handleUseRecording}
+            className="w-full py-4 rounded-2xl gradient-cyan-lime text-navy-900 font-bold text-lg"
+          >
+            Usar esta grabación →
+          </button>
+          <button
+            onClick={discardRecording}
+            className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 text-sm"
+          >
+            Grabar de nuevo
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Record screen ───────────────────────────────────────────────────────────
   if (step === 'record') {
     return (
       <div className="px-4 pt-4 pb-32">
-        <button onClick={() => setStep('choose')} className="flex items-center gap-2 text-gray-400 mb-5">
+        <button
+          onClick={() => { if (isRecording) stopRecording(); setStep('choose'); }}
+          className="flex items-center gap-2 text-gray-400 mb-5"
+        >
           <ArrowLeft className="w-4 h-4" /> Volver
         </button>
 
         <h1 className="text-xl font-bold text-white mb-1">Grabá tu idea</h1>
-        <p className="text-sm text-gray-400 mb-8">Capturá el momento. Los detalles los completás después.</p>
+        <p className="text-sm text-gray-400 mb-6">Capturá el momento. Los detalles los completás después.</p>
 
-        <div className="flex flex-col items-center py-8">
-          {isRecording && (
-            <div className="flex items-end gap-0.5 h-16 mb-6">
-              {[...Array(32)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1.5 bg-rose-400 rounded-full animate-pulse"
-                  style={{ height: `${Math.random() * 60 + 10}%`, animationDelay: `${i * 0.05}s` }}
-                />
-              ))}
-            </div>
-          )}
+        {/* Error state */}
+        {recordError && (
+          <div className="flex items-start gap-2 mb-6 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30">
+            <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-rose-300">{recordError}</p>
+          </div>
+        )}
 
-          <div className={`text-4xl font-mono font-bold mb-8 ${isRecording ? 'text-rose-400' : 'text-gray-600'}`}>
+        <div className="flex flex-col items-center py-4">
+          {/* Live waveform canvas */}
+          <div className="w-full h-20 mb-4 rounded-xl overflow-hidden bg-white/3">
+            <canvas
+              ref={canvasRef}
+              width={320}
+              height={80}
+              className="w-full h-full"
+            />
+          </div>
+
+          {/* Timer */}
+          <div className={`text-5xl font-mono font-bold mb-8 tabular-nums ${isRecording ? 'text-rose-400' : 'text-gray-600'}`}>
             {formatRecTime(recordingTime)}
           </div>
 
+          {/* Record / Stop button */}
           <button
-            onClick={handleRecord}
+            onClick={() => isRecording ? stopRecording() : startRecording()}
             className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
               isRecording
                 ? 'bg-rose-500 scale-110 shadow-2xl shadow-rose-500/50'
@@ -362,30 +569,18 @@ export function GrabarPage() {
           <p className="mt-4 text-sm text-gray-500">
             {isRecording ? 'Tocá para detener' : 'Tocá para grabar'}
           </p>
-        </div>
 
-        {!isRecording && recordingTime > 0 && (
-          <div className="mt-4 space-y-3">
-            <p className="text-center text-sm text-emerald-400">✓ Grabado: {formatRecTime(recordingTime)}</p>
-            <button
-              onClick={() => setStep('metadata')}
-              className="w-full py-4 rounded-2xl gradient-cyan-lime text-navy-900 font-bold text-lg"
-            >
-              Continuar →
-            </button>
-            <button
-              onClick={() => setRecordingTime(0)}
-              className="w-full py-3 rounded-xl bg-white/5 text-gray-400 text-sm"
-            >
-              Grabar de nuevo
-            </button>
-          </div>
-        )}
+          {isRecording && (
+            <p className="mt-2 text-xs text-gray-600">
+              Límite: {formatRecTime(MAX_RECORDING_SECONDS - recordingTime)}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
 
-  // ── File upload picker ─────────────────────────────────────────────────────
+  // ── File upload picker ──────────────────────────────────────────────────────
   if (step === 'upload') {
     return (
       <div className="px-4 pt-4 pb-32">
@@ -404,10 +599,8 @@ export function GrabarPage() {
               const file = e.target.files?.[0];
               if (file) {
                 setSelectedFile(file);
-                // Pre-fill name from filename if still empty
-                if (!name) {
-                  setName(file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '));
-                }
+                if (!name) setName(file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '));
+                setErrorMessage('');
                 setStep('metadata');
               }
             }}
@@ -433,7 +626,7 @@ export function GrabarPage() {
     );
   }
 
-  // ── Default: choose mode ───────────────────────────────────────────────────
+  // ── Choose mode ─────────────────────────────────────────────────────────────
   return (
     <div className="px-4 pt-6 pb-32">
       <h1 className="text-2xl font-bold text-white mb-1">Crear</h1>

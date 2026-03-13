@@ -1,8 +1,10 @@
 import { Menu, Search, LogIn } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 
 export function Header() {
-  const { toggleMenu, setPage, user, openLoginModal, clearAuth } = useAppStore();
+  const navigate = useNavigate();
+  const { toggleMenu, user, openLoginModal, clearAuth } = useAppStore();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
@@ -24,7 +26,7 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setPage('descubri')}
+            onClick={() => navigate('/descubri')}
             className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
           >
             <Search className="w-5 h-5 text-cyan-400" />

@@ -1,4 +1,5 @@
 import { Play, Pause } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 import type { AudioTrack } from '@/types';
 
@@ -29,13 +30,15 @@ const typeBorders: Record<string, string> = {
 };
 
 export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
-  const { currentTrack, isPlaying, playTrack, togglePlay, setPage } = useAppStore();
+  const navigate = useNavigate();
+  const { currentTrack, isPlaying, playTrack, togglePlay } = useAppStore();
   const isCurrentTrack = currentTrack?.id === track.id;
   const isPlayingThis = isCurrentTrack && isPlaying;
 
   const handleCardClick = () => {
     if (!isCurrentTrack) playTrack(track);
-    setPage('archivo');
+    const username = track.artist.replace(/^@/, '');
+    navigate(`/${username}/${track.id}`);
   };
 
   const handlePlayClick = (e: React.MouseEvent) => {
