@@ -65,8 +65,10 @@ export function ArchivoPage() {
     fetchAudioBySlug(slug).then(data => {
       if (data) {
         setTrack(data);
-        // Start playing if nothing is currently playing this track
-        if (currentTrack?.id !== slug) playTrack(data);
+        // Always update the player with authoritative data — the collab tree may have
+        // started playback with a stub (no audioUrl) before the full data was fetched.
+        const current = useAppStore.getState().currentTrack;
+        if (current?.id !== slug || !current.audioUrl) playTrack(data);
       }
     }).finally(() => setLoadingTrack(false));
   }, [slug]);
