@@ -160,6 +160,7 @@ export function AgentPanel({ track, onClose, onAddToTree }: AgentPanelProps) {
       id: Date.now(),
       slug: `ia-${agent.id}-${Date.now()}`,
       name: `${agent.name} — overdub de "${track.title}"`,
+      audio: null,
       user: { id: 0, username: agent.name, avatar_url: null },
       use_type: agent.type === 'overdub' ? 'loop' : 'song',
       isIA: true,

@@ -142,6 +142,7 @@ export interface CollabNode {
   id: number;
   slug: string;
   name: string;
+  audio: string | null;
   user: { id: number; username: string; avatar_url: string | null };
   use_type: string;
   isIA?: boolean;

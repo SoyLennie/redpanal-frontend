@@ -416,11 +416,12 @@ function CollabTreeNode({ node, depth, currentSlug }: { node: CollabNode; depth:
   const handleNavigate = () => {
     if (!isCurrent) {
       playTrack({
-        id:     node.slug,
-        pkId:   node.id,
-        title:  node.name,
-        artist: `@${node.user.username}`,
-        type:   node.use_type as 'loop' | 'pista' | 'cancion' | 'sample',
+        id:       node.slug,
+        pkId:     node.id,
+        audioUrl: node.audio ?? undefined,
+        title:    node.name,
+        artist:   `@${node.user.username}`,
+        type:     node.use_type as 'loop' | 'pista' | 'cancion' | 'sample',
         instrument: '', genre: '', tags: [], duration: '0:00', status: 'published',
       });
       navigate(`/${node.user.username}/${node.slug}`);
