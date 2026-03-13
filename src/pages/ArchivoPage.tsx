@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, Heart, Share2, Download, GitBranch, ChevronRight, Users, Loader2 } from 'lucide-react';
+import { Play, Pause, Heart, Share2, Download, GitBranch, ChevronRight, Users, Loader2, Sparkles } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 import { fetchComments, postComment, fetchCollabTree, fetchPeaks, fetchAudioBySlug } from '@/api/audio';
 import type { Comment, CollabNode } from '@/api/audio';
+import { AgentPanel } from '@/components/AgentPanel';
 import type { AudioTrack } from '@/types';
 
 type Tab = 'historia' | 'comentarios' | 'info';
@@ -49,6 +50,7 @@ export function ArchivoPage() {
   const [postingComment, setPostingComment] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [collabRoot, setCollabRoot] = useState<CollabNode | null>(null);
+  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const [loadingTree, setLoadingTree] = useState(false);
   const [waveform, setWaveform] = useState<number[]>(WAVEFORM_PLACEHOLDER);
   const [loadingWaveform, setLoadingWaveform] = useState(false);
@@ -120,6 +122,14 @@ export function ArchivoPage() {
     } finally {
       setPostingComment(false);
     }
+  };
+
+  const handleAddIAToTree = (node: CollabNode) => {
+    setCollabRoot(prev => {
+      if (!prev) return prev;
+      return { ...prev, collaborations: [...prev.collaborations, node] };
+    });
+    setTab('historia');
   };
 
   const handlePlay = () => {
@@ -217,6 +227,12 @@ export function ArchivoPage() {
           </button>
           <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
             <Download className="w-5 h-5 text-gray-400" />
+          </button>
+          <button
+            onClick={() => setAgentPanelOpen(true)}
+            className="w-10 h-10 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/30 flex items-center justify-center hover:bg-fuchsia-500/25 transition-colors"
+          >
+            <Sparkles className="w-5 h-5 text-fuchsia-400" />
           </button>
         </div>
 
@@ -426,6 +442,15 @@ export function ArchivoPage() {
           </div>
         </div>
       )}
+
+      {/* Agent Panel */}
+      {agentPanelOpen && track && (
+        <AgentPanel
+          track={track}
+          onClose={() => setAgentPanelOpen(false)}
+          onAddToTree={handleAddIAToTree}
+        />
+      )}
     </div>
   );
 }
@@ -476,6 +501,11 @@ function CollabTreeNode({ node, depth, currentSlug }: { node: CollabNode; depth:
           <p className="text-xs text-cyan-400">@{node.user.username}</p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {node.isIA && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30 font-bold">
+              IA
+            </span>
+          )}
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${
             node.use_type === 'loop'   ? 'bg-fuchsia-500/20 text-fuchsia-400' :
             node.use_type === 'track'  ? 'bg-amber-500/20 text-amber-400' :

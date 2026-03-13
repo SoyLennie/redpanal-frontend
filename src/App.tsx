@@ -43,7 +43,7 @@ function App() {
           <Route path="/asamblea" element={<AsambleaPage />} />
           <Route path="/interacciones" element={<InteraccionesPage />} />
           <Route path="/comunidad" element={<ComunidadPage />} />
-          <Route path="/redpanal" element={<RedPanalPage />} />
+          <Route path="/about" element={<RedPanalPage />} />
           {/* /:username/:slug must come before /:username */}
           <Route path="/:username/:slug" element={<ArchivoPage />} />
           <Route path="/:username" element={<PerfilPage />} />

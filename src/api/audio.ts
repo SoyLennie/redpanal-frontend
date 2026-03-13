@@ -144,6 +144,7 @@ export interface CollabNode {
   name: string;
   user: { id: number; username: string; avatar_url: string | null };
   use_type: string;
+  isIA?: boolean;
   collaborations: CollabNode[];
 }
 

@@ -15,7 +15,7 @@ export function SideMenu() {
 
   const handleItemClick = (action: string) => {
     if (action === 'redpanal') {
-      navigate('/redpanal');
+      navigate('/about');
     }
     closeMenu();
   };
