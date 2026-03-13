@@ -103,7 +103,10 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
               <h4 className="font-semibold text-white truncate group-hover:text-cyan-400 transition-colors">
                 {track.title}
               </h4>
-              <p className="text-sm text-gray-400">{track.artist}</p>
+              <button
+                onClick={e => { e.stopPropagation(); navigate(`/${track.artist.replace(/^@/, '')}`); }}
+                className="text-sm text-gray-400 hover:text-cyan-400 transition-colors text-left"
+              >{track.artist}</button>
             </div>
             <span className="text-xs text-gray-500">{track.duration}</span>
           </div>
@@ -175,7 +178,10 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
         <h4 className={`font-medium text-sm truncate ${isCurrentTrack ? 'text-cyan-400' : 'text-white'} group-hover:text-cyan-400 transition-colors`}>
           {track.title}
         </h4>
-        <p className="text-xs text-gray-500 truncate">{track.artist}</p>
+        <button
+          onClick={e => { e.stopPropagation(); navigate(`/${track.artist.replace(/^@/, '')}`); }}
+          className="text-xs text-gray-500 truncate hover:text-cyan-400 transition-colors text-left"
+        >{track.artist}</button>
       </div>
     </div>
   );

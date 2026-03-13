@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Heart, MessageCircle, Download, Share2, ChevronUp, ChevronDown, X, GitBranch, MoreHorizontal } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 
 const typeColors: Record<string, string> = {
@@ -20,6 +21,7 @@ const WAVEFORM_BARS = Array.from({ length: 40 }, (_, i) => {
 });
 
 export function Player() {
+  const navigate = useNavigate();
   const {
     currentTrack, isPlaying, togglePlay,
     playerExpanded, expandPlayer, collapsePlayer,
@@ -172,7 +174,10 @@ export function Player() {
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="font-medium text-white text-sm truncate">{currentTrack.title}</h4>
-              <p className="text-xs text-gray-400 truncate">{currentTrack.artist}</p>
+              <button
+                onClick={e => { e.stopPropagation(); navigate(`/${currentTrack.artist.replace(/^@/, '')}`); }}
+                className="text-xs text-gray-400 truncate hover:text-cyan-400 transition-colors text-left"
+              >{currentTrack.artist}</button>
             </div>
             {isPlaying && (
               <div className="hidden sm:flex items-end gap-px h-5">
@@ -245,7 +250,10 @@ export function Player() {
             {/* Track info */}
             <div className="px-8 pt-5 text-center">
               <h2 className="text-xl font-bold text-white">{currentTrack.title}</h2>
-              <p className="text-base text-cyan-400 mt-1">{currentTrack.artist}</p>
+              <button
+                onClick={() => { collapsePlayer(); navigate(`/${currentTrack.artist.replace(/^@/, '')}`); }}
+                className="text-base text-cyan-400 mt-1 hover:underline"
+              >{currentTrack.artist}</button>
               <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
                 {currentTrack.tags.slice(0, 3).map(tag => (
                   <span key={tag} className="text-xs text-gray-500">#{tag}</span>

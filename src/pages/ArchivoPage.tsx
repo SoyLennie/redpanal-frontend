@@ -31,6 +31,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export function ArchivoPage() {
+  const navigate = useNavigate();
   const { slug } = useParams<{ username: string; slug: string }>();
   const { currentTrack, isPlaying, playTrack, togglePlay, user, openLoginModal } = useAppStore();
 
@@ -124,6 +125,19 @@ export function ArchivoPage() {
     }
   };
 
+  const handleMsgHtmlClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLAnchorElement;
+    if (target.tagName === 'A') {
+      e.preventDefault();
+      const href = target.getAttribute('href') ?? '';
+      if (href.startsWith('/u/')) {
+        navigate(`/${href.replace('/u/', '').replace(/\/$/, '')}`);
+      } else if (href.startsWith('/tag/')) {
+        navigate(`/buscar?tag=${href.replace('/tag/', '').replace(/\/$/, '')}`);
+      }
+    }
+  };
+
   const handleAddIAToTree = (node: CollabNode) => {
     setCollabRoot(prev => {
       if (!prev) return prev;
@@ -172,7 +186,10 @@ export function ArchivoPage() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-white font-bold text-lg leading-tight">{track.title}</h1>
-            <p className="text-cyan-400 text-sm">{track.artist}</p>
+            <button
+              onClick={() => navigate(`/${track.artist.replace(/^@/, '')}`)}
+              className="text-cyan-400 text-sm hover:underline text-left"
+            >{track.artist}</button>
             <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
               <span>{track.instrument}</span>
               <span>·</span>
@@ -308,9 +325,10 @@ export function ArchivoPage() {
                       {isAuthor && <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">autor</span>}
                       <span className="text-xs text-gray-600 ml-auto">{timeAgo(c.created_at)}</span>
                     </div>
-                    <p
+                    <div
                       className="text-sm text-gray-300 [&_a]:text-cyan-400 [&_a]:hover:underline"
                       dangerouslySetInnerHTML={{ __html: c.msg_html }}
+                      onClick={handleMsgHtmlClick}
                     />
                   </div>
                 );
@@ -498,7 +516,10 @@ function CollabTreeNode({ node, depth, currentSlug }: { node: CollabNode; depth:
             {node.name}
             {isCurrent && <span className="ml-2 text-[10px] text-cyan-400 font-normal">← este</span>}
           </p>
-          <p className="text-xs text-cyan-400">@{node.user.username}</p>
+          <button
+            onClick={e => { e.stopPropagation(); navigate(`/${node.user.username}`); }}
+            className="text-xs text-cyan-400 hover:underline text-left"
+          >@{node.user.username}</button>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {node.isIA && (

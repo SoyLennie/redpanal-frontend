@@ -1,4 +1,5 @@
 import { GitBranch, Music2, FolderOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { Activity } from '@/api/activity';
 
 export function timeAgo(iso: string): string {
@@ -36,6 +37,7 @@ interface ActivityItemProps {
 }
 
 export function ActivityItem({ activity: a, mode = 'personal' }: ActivityItemProps) {
+  const navigate = useNavigate();
   const map     = mode === 'global' ? VERB_GLOBAL   : VERB_PERSONAL;
   const dflt    = mode === 'global' ? DEFAULT_GLOBAL : DEFAULT_PERSONAL;
   const cfg     = map[a.verb] ?? dflt;
@@ -52,7 +54,10 @@ export function ActivityItem({ activity: a, mode = 'personal' }: ActivityItemPro
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white">
           {mode === 'global' && actor && (
-            <span className="text-cyan-400 font-medium">@{actor} </span>
+            <button
+              onClick={() => navigate(`/${actor}`)}
+              className="text-cyan-400 font-medium hover:underline"
+            >@{actor} </button>
           )}
           <span className="text-gray-400">{cfg.label} </span>
           <span className={objectSlug ? 'text-white font-medium' : 'text-gray-300'}>
