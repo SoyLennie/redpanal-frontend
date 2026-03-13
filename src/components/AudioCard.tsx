@@ -1,4 +1,4 @@
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, GitBranch } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 import type { AudioTrack } from '@/types';
@@ -39,6 +39,21 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
     if (!isCurrentTrack) playTrack(track);
     const username = track.artist.replace(/^@/, '');
     navigate(`/${username}/${track.id}`);
+  };
+
+  const handleColabClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate('/grabar', {
+      state: {
+        sourceAudio: {
+          pkId: track.pkId,
+          slug: track.id,
+          name: track.title,
+          username: track.artist.replace(/^@/, ''),
+          audioUrl: track.audioUrl,
+        },
+      },
+    });
   };
 
   const handlePlayClick = (e: React.MouseEvent) => {
@@ -123,9 +138,16 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
             ))}
           </div>
           
-          {/* Stats */}
-          <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-            <span>{track.collaborations ?? 0} colaboraciones</span>
+          {/* Stats + Colaborar */}
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs text-gray-500">{track.collaborations ?? 0} colaboraciones</span>
+            <button
+              onClick={handleColabClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity hover:bg-cyan-500/20"
+            >
+              <GitBranch className="w-3 h-3" />
+              Colaborar
+            </button>
           </div>
         </div>
       </div>
@@ -145,8 +167,8 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
           {typeLabels[track.type]}
         </div>
         
-        {/* Play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+        {/* Play + Colaborar overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
           <div onClick={handlePlayClick} className="w-10 h-10 rounded-full gradient-cyan-lime flex items-center justify-center">
             {isPlayingThis ? (
               <Pause className="w-4 h-4 text-navy-900" />
@@ -154,6 +176,13 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
               <Play className="w-4 h-4 text-navy-900 ml-0.5" />
             )}
           </div>
+          <button
+            onClick={handleColabClick}
+            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/50 text-cyan-400 text-[10px] font-medium border border-cyan-500/30"
+          >
+            <GitBranch className="w-2.5 h-2.5" />
+            Colab
+          </button>
         </div>
         
         {/* Playing indicator */}

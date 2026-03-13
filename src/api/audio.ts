@@ -165,6 +165,7 @@ export interface UploadFields {
   instrument?: string;
   description?: string;
   license?: string;
+  source_audio_id?: number;
 }
 
 export interface UploadError {
@@ -185,6 +186,7 @@ export function uploadAudio(
   if (fields.genre)       fd.append('genre', fields.genre);
   if (fields.instrument)  fd.append('instrument', fields.instrument);
   if (fields.description) fd.append('description', fields.description);
+  if (fields.source_audio_id != null) fd.append('source_audio_id', String(fields.source_audio_id));
   fd.append('license', fields.license ?? 'CC-BY-SA-4.0');
   // taggit_serializer requires the field to be present even when empty
   fd.append('tags', '[]');

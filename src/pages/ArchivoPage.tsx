@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, Heart, Share2, Download, GitBranch, ChevronRight, Users, Loader2, Sparkles } from 'lucide-react';
+import { Play, Pause, Heart, Share2, Download, GitBranch, Users, Loader2, Sparkles } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 import { fetchComments, postComment, fetchCollabTree, fetchPeaks, fetchAudioBySlug } from '@/api/audio';
@@ -8,7 +8,6 @@ import { AgentPanel } from '@/components/AgentPanel';
 import type { AudioTrack } from '@/types';
 
 type Tab = 'historia' | 'comentarios' | 'info';
-type CollabStep = null | 'choose' | 'record-layer' | 'upload-version';
 
 const WAVEFORM_PLACEHOLDER = Array.from({ length: 50 }, () => 0.15);
 
@@ -43,7 +42,6 @@ export function ArchivoPage() {
 
   const [tab, setTab] = useState<Tab>('historia');
   const [liked, setLiked] = useState(false);
-  const [collabStep, setCollabStep] = useState<CollabStep>(null);
   const [progress, setProgress] = useState(0.35);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -229,8 +227,18 @@ export function ArchivoPage() {
           </button>
 
           <button
-            onClick={() => setCollabStep('choose')}
-            className="flex-1 py-3 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-cyan-500/25 transition-colors"
+            onClick={() => navigate('/grabar', {
+              state: {
+                sourceAudio: {
+                  pkId: track.pkId,
+                  slug: track.id,
+                  name: track.title,
+                  username: track.artist.replace(/^@/, ''),
+                  audioUrl: track.audioUrl,
+                },
+              },
+            })}
+            className="flex-1 py-3 rounded-xl gradient-cyan-lime text-navy-900 font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-md shadow-cyan-500/20"
           >
             <GitBranch className="w-4 h-4" />
             Colaborar
@@ -383,83 +391,6 @@ export function ArchivoPage() {
           </div>
         )}
       </div>
-
-      {/* Collaboration bottom sheet */}
-      {collabStep && (
-        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setCollabStep(null)}>
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div
-            className="relative w-full bg-[#0f1f38] rounded-t-3xl p-6 pb-12"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
-
-            {collabStep === 'choose' && (
-              <>
-                <h3 className="text-white font-bold text-xl mb-1">Colaborar</h3>
-                <p className="text-sm text-gray-400 mb-6">Con licencia CC podés colaborar sin pedir permiso. Tu trabajo queda registrado en el árbol.</p>
-                <div className="space-y-3">
-                  {[
-                    { icon: '🎙', title: 'Grabar una capa nueva', desc: 'El audio original suena de fondo mientras grabás', action: 'record-layer' },
-                    { icon: '📁', title: 'Subir algo que ya tenés', desc: 'Sube un archivo que preparaste previamente', action: 'upload-version' },
-                    { icon: '🔀', title: 'Hacer una versión', desc: 'Descargá el original y publicá tu remix', action: 'upload-version' },
-                  ].map(opt => (
-                    <button
-                      key={opt.title}
-                      onClick={() => setCollabStep(opt.action as CollabStep)}
-                      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors text-left"
-                    >
-                      <span className="text-2xl">{opt.icon}</span>
-                      <div className="flex-1">
-                        <p className="text-white font-medium">{opt.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-500" />
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {collabStep === 'record-layer' && (
-              <>
-                <h3 className="text-white font-bold text-xl mb-1">Grabá una capa</h3>
-                <p className="text-sm text-gray-400 mb-4">El original suena de guía mientras grabás</p>
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 mb-5">
-                  <button onClick={handlePlay} className="w-9 h-9 rounded-full gradient-cyan-lime flex items-center justify-center flex-shrink-0">
-                    {isCurrentPlaying ? <Pause className="w-3.5 h-3.5 text-navy-900" /> : <Play className="w-3.5 h-3.5 text-navy-900" />}
-                  </button>
-                  <div className="flex-1">
-                    <p className="text-xs text-white">{track.title} (guía)</p>
-                    <div className="h-1 bg-white/10 rounded-full mt-1">
-                      <div className="h-full gradient-cyan-lime rounded-full" style={{ width: `${progress * 100}%` }} />
-                    </div>
-                  </div>
-                </div>
-                <button className="w-full py-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-lg flex items-center justify-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-rose-500" />
-                  Grabar
-                </button>
-              </>
-            )}
-
-            {collabStep === 'upload-version' && (
-              <>
-                <h3 className="text-white font-bold text-xl mb-1">Subir colaboración</h3>
-                <p className="text-sm text-gray-400 mb-5">Se va a vincular automáticamente al árbol de "{track.title}"</p>
-                <label className="flex flex-col items-center gap-3 border-2 border-dashed border-white/20 rounded-2xl py-8 cursor-pointer hover:border-cyan-500/40 transition-colors">
-                  <input type="file" accept="audio/*" className="hidden" />
-                  <span className="text-3xl">🎵</span>
-                  <div className="text-center">
-                    <p className="text-white font-medium">Elegí tu archivo</p>
-                    <p className="text-xs text-gray-500 mt-0.5">MP3, WAV, OGG, FLAC</p>
-                  </div>
-                </label>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Agent Panel */}
       {agentPanelOpen && track && (

@@ -318,7 +318,23 @@ export function Player() {
               </div>
 
               <div className="flex justify-center gap-3">
-                <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-sm font-medium hover:bg-cyan-500/20 transition-colors">
+                <button
+                  onClick={() => {
+                    collapsePlayer();
+                    navigate('/grabar', {
+                      state: {
+                        sourceAudio: {
+                          pkId: currentTrack.pkId,
+                          slug: currentTrack.id,
+                          name: currentTrack.title,
+                          username: currentTrack.artist.replace(/^@/, ''),
+                          audioUrl: currentTrack.audioUrl,
+                        },
+                      },
+                    });
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-cyan-lime text-navy-900 text-sm font-bold hover:opacity-90 transition-opacity shadow-md shadow-cyan-500/20"
+                >
                   <GitBranch className="w-4 h-4" />
                   Colaborar
                 </button>

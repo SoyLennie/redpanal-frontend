@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Mic, Upload, ChevronRight, Loader2, AlertCircle, X, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Mic, Upload, ChevronRight, Loader2, AlertCircle, X, ArrowLeft, GitBranch } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
 import { uploadAudio } from '@/api/audio';
 import type { UploadError } from '@/api/audio';
@@ -44,8 +44,18 @@ function drawCanvas(canvas: HTMLCanvasElement, analyser: AnalyserNode) {
   }
 }
 
+interface SourceAudio {
+  pkId: number;
+  slug: string;
+  name: string;
+  username: string;
+  audioUrl?: string;
+}
+
 export function GrabarPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const sourceAudio = (location.state as { sourceAudio?: SourceAudio } | null)?.sourceAudio;
   const { user, openLoginModal, playTrack } = useAppStore();
 
   const [step, setStep] = useState<Step>('choose');
@@ -231,6 +241,7 @@ export function GrabarPage() {
           use_type: FRONTEND_TO_USE_TYPE[audioType] ?? 'other',
           genre:      genre      || undefined,
           instrument: instrument || undefined,
+          source_audio_id: sourceAudio?.pkId,
         },
         (percent) => setUploadProgress(percent),
       );
@@ -341,7 +352,11 @@ export function GrabarPage() {
           <ArrowLeft className="w-4 h-4" /> Volver
         </button>
         <h1 className="text-xl font-bold text-white mb-1">Publicar audio</h1>
-        <p className="text-sm text-gray-400 mb-6">Completá los datos para que otros puedan encontrarlo</p>
+        <p className="text-sm text-gray-400 mb-4">Completá los datos para que otros puedan encontrarlo</p>
+
+        {sourceAudio && (
+          <SourceAudioBanner sourceAudio={sourceAudio} />
+        )}
 
         {selectedFile && (
           <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
@@ -629,8 +644,18 @@ export function GrabarPage() {
   // ── Choose mode ─────────────────────────────────────────────────────────────
   return (
     <div className="px-4 pt-6 pb-32">
-      <h1 className="text-2xl font-bold text-white mb-1">Crear</h1>
-      <p className="text-gray-400 mb-8">Capturá tu idea ahora. Los detalles los completás después.</p>
+      {sourceAudio ? (
+        <>
+          <h1 className="text-2xl font-bold text-white mb-1">Colaborar</h1>
+          <p className="text-gray-400 mb-4">Grabá o subí tu aporte. Se va a vincular al original.</p>
+          <SourceAudioBanner sourceAudio={sourceAudio} />
+        </>
+      ) : (
+        <>
+          <h1 className="text-2xl font-bold text-white mb-1">Crear</h1>
+          <p className="text-gray-400 mb-8">Capturá tu idea ahora. Los detalles los completás después.</p>
+        </>
+      )}
 
       <div className="space-y-3">
         <button
@@ -670,12 +695,56 @@ export function GrabarPage() {
         </button>
       </div>
 
-      <div className="mt-8 p-4 rounded-2xl bg-white/3 border border-white/5">
-        <h4 className="text-sm font-semibold text-gray-300 mb-1">💡 Flujo rápido</h4>
-        <p className="text-xs text-gray-500">
-          Podés grabar ahora y completar el nombre, instrumento y género después.
-          Tu audio queda como borrador hasta que lo publiques.
-        </p>
+      {!sourceAudio && (
+        <div className="mt-8 p-4 rounded-2xl bg-white/3 border border-white/5">
+          <h4 className="text-sm font-semibold text-gray-300 mb-1">💡 Flujo rápido</h4>
+          <p className="text-xs text-gray-500">
+            Podés grabar ahora y completar el nombre, instrumento y género después.
+            Tu audio queda como borrador hasta que lo publiques.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SourceAudioBanner({ sourceAudio }: { sourceAudio: { pkId: number; slug: string; name: string; username: string; audioUrl?: string } }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  const toggle = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playing) { a.pause(); setPlaying(false); }
+    else { a.play().then(() => setPlaying(true)).catch(() => {}); }
+  };
+
+  return (
+    <div className="mb-6 p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30">
+      <div className="flex items-center gap-2 mb-2">
+        <GitBranch className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+        <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Colaborando con</span>
+      </div>
+      <div className="flex items-center gap-3">
+        {sourceAudio.audioUrl && (
+          <>
+            <audio ref={audioRef} src={sourceAudio.audioUrl} onEnded={() => setPlaying(false)} />
+            <button
+              onClick={toggle}
+              className="w-9 h-9 rounded-full gradient-cyan-lime flex items-center justify-center flex-shrink-0"
+            >
+              {playing ? (
+                <svg className="w-3.5 h-3.5 text-navy-900 fill-current" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              ) : (
+                <svg className="w-3.5 h-3.5 text-navy-900 fill-current ml-0.5" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+              )}
+            </button>
+          </>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-semibold text-sm truncate">{sourceAudio.name}</p>
+          <p className="text-xs text-cyan-400">@{sourceAudio.username}</p>
+        </div>
       </div>
     </div>
   );
