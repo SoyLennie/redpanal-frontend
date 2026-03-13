@@ -105,6 +105,35 @@ export async function fetchUserAudios(username: string): Promise<{ count: number
   return { count, tracks: results.map(mapAudio) };
 }
 
+export async function fetchUserColabs(username: string): Promise<AudioTrack[]> {
+  const res = await fetch(`${API_BASE}/audio/list/?user=${encodeURIComponent(username)}&has_source=true&page_size=200`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  const results = Array.isArray(data) ? data : (data.results ?? []);
+  return results.map(mapAudio);
+}
+
+export interface UserCard {
+  username: string;
+  avatar_url: string | null;
+}
+
+export async function fetchUserFollowers(username: string): Promise<UserCard[]> {
+  try {
+    const res = await fetch(`${API_BASE}/users/${encodeURIComponent(username)}/followers/`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch { return []; }
+}
+
+export async function fetchUserFollowing(username: string): Promise<UserCard[]> {
+  try {
+    const res = await fetch(`${API_BASE}/users/${encodeURIComponent(username)}/following/`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch { return []; }
+}
+
 export interface PopularTag {
   name: string;
   slug: string;

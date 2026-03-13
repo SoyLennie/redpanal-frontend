@@ -1,14 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { AudioCard } from '@/components/AudioCard';
 import { useAppStore } from '@/store/appStore';
-import { GitBranch, Music2, Heart, LogIn, UserPlus, UserCheck, Loader2, Settings } from 'lucide-react';
+import { Music2, Heart, LogIn, UserPlus, UserCheck, Loader2, Settings, GitBranch } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchUserAudios, fetchAudioList, fetchUserStats, followUser, unfollowUser, fetchMyFollowing, fetchIsFollowing } from '@/api/audio';
-import type { UserStats } from '@/api/audio';
+import {
+  fetchUserAudios, fetchUserColabs, fetchUserFollowers, fetchUserFollowing,
+  fetchAudioList, fetchUserStats, followUser, unfollowUser, fetchMyFollowing, fetchIsFollowing,
+} from '@/api/audio';
+import type { UserStats, UserCard } from '@/api/audio';
 import { fetchGlobalActivity } from '@/api/activity';
 import type { AudioTrack } from '@/types';
 import type { Activity } from '@/api/activity';
 import { ActivityItem } from '@/components/ActivityItem';
+
+type ProfileTab = 'audios' | 'colabs' | 'likes' | 'seguidores' | 'siguiendo';
 
 export function PerfilPage() {
   const { username } = useParams<{ username: string }>();
@@ -18,20 +23,35 @@ export function PerfilPage() {
   const isOwnProfile = !!user && user.username === username;
   const profileUsername = username ?? user?.username;
 
+  // Core data
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [audioCount, setAudioCount] = useState(0);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
+  // Follow state
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  // Tabs
+  const [tab, setTab] = useState<ProfileTab>('audios');
+
+  // Lazy-loaded tab data
+  const [colabs, setColabs] = useState<AudioTrack[] | null>(null);
+  const [colabsLoading, setColabsLoading] = useState(false);
+  const [followers, setFollowers] = useState<UserCard[] | null>(null);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [following, setFollowingList] = useState<UserCard[] | null>(null);
+  const [followingLoading, setFollowingLoading] = useState(false);
+
+  // Load core data on mount / username change
   useEffect(() => {
     if (!profileUsername) return;
     setLoading(true);
-    setTracks([]);
-    setStats(null);
-    setNotFound(false);
+    setTracks([]); setStats(null); setNotFound(false);
+    setColabs(null); setFollowers(null); setFollowingList(null);
+    setTab('audios');
     Promise.all([
       fetchUserAudios(profileUsername),
       fetchUserStats(profileUsername),
@@ -48,7 +68,33 @@ export function PerfilPage() {
       .finally(() => setLoading(false));
   }, [profileUsername, isOwnProfile]);
 
-  // No username and not logged in — prompt login
+  // Lazy load colabs when tab first activated
+  useEffect(() => {
+    if (tab !== 'colabs' || colabs !== null || !profileUsername) return;
+    setColabsLoading(true);
+    fetchUserColabs(profileUsername)
+      .then(setColabs)
+      .finally(() => setColabsLoading(false));
+  }, [tab, profileUsername, colabs]);
+
+  // Lazy load followers
+  useEffect(() => {
+    if (tab !== 'seguidores' || followers !== null || !profileUsername) return;
+    setFollowersLoading(true);
+    fetchUserFollowers(profileUsername)
+      .then(setFollowers)
+      .finally(() => setFollowersLoading(false));
+  }, [tab, profileUsername, followers]);
+
+  // Lazy load following
+  useEffect(() => {
+    if (tab !== 'siguiendo' || following !== null || !profileUsername) return;
+    setFollowingLoading(true);
+    fetchUserFollowing(profileUsername)
+      .then(setFollowingList)
+      .finally(() => setFollowingLoading(false));
+  }, [tab, profileUsername, following]);
+
   if (!profileUsername) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center pb-32">
@@ -57,12 +103,9 @@ export function PerfilPage() {
         </div>
         <h2 className="text-white font-semibold mb-2">Tu perfil</h2>
         <p className="text-gray-500 text-sm mb-5">Iniciá sesión para ver tus audios y estadísticas</p>
-        <button
-          onClick={() => openLoginModal()}
+        <button onClick={() => openLoginModal()}
           className="px-6 py-2.5 rounded-full gradient-cyan-lime text-navy-900 text-sm font-semibold"
-        >
-          Iniciar sesión
-        </button>
+        >Iniciar sesión</button>
       </div>
     );
   }
@@ -94,90 +137,168 @@ export function PerfilPage() {
     finally { setFollowLoading(false); }
   };
 
+  const TABS: { id: ProfileTab; label: string }[] = [
+    { id: 'audios',     label: 'Subidos' },
+    { id: 'colabs',     label: 'Colabs' },
+    { id: 'likes',      label: 'Likes' },
+    { id: 'seguidores', label: 'Seguidores' },
+    { id: 'siguiendo',  label: 'Siguiendo' },
+  ];
+
   return (
     <div className="pb-32">
+      {/* ── Header ── */}
       <div className="px-4 pt-6 pb-5 text-center border-b border-white/10">
         <div className="w-20 h-20 rounded-full gradient-cyan-lime mx-auto flex items-center justify-center mb-3">
           <span className="text-navy-900 font-bold text-2xl">{initial}</span>
         </div>
         <h1 className="text-xl font-bold text-white">@{profileUsername}</h1>
 
+        {/* Action button */}
         {isOwnProfile ? (
-          <button
-            onClick={() => navigate('/about')}
+          <button onClick={() => navigate('/about')}
             className="mt-3 inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-colors"
-          >
-            <Settings className="w-4 h-4" /> Editar perfil
-          </button>
+          ><Settings className="w-4 h-4" /> Editar perfil</button>
         ) : user ? (
-          <button
-            onClick={handleFollow}
-            disabled={followLoading}
+          <button onClick={handleFollow} disabled={followLoading}
             className={`mt-3 inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-all disabled:opacity-50 ${
-              isFollowing
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                : 'gradient-cyan-lime text-navy-900'
+              isFollowing ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'gradient-cyan-lime text-navy-900'
             }`}
           >
             {isFollowing ? <><UserCheck className="w-4 h-4" /> Siguiendo</> : <><UserPlus className="w-4 h-4" /> Seguir</>}
           </button>
         ) : (
-          <button
-            onClick={() => openLoginModal()}
+          <button onClick={() => openLoginModal()}
             className="mt-3 inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 transition-colors"
-          >
-            <LogIn className="w-4 h-4" /> Seguir
-          </button>
+          ><LogIn className="w-4 h-4" /> Seguir</button>
         )}
 
-        <div className="flex justify-center gap-8 mt-4 text-sm">
+        {/* Clickable stats */}
+        <div className="flex justify-center gap-2 mt-4">
           {[
-            { label: 'Audios',     val: audioCount },
-            { label: 'Seguidores', val: stats?.followers_count ?? '—' },
-            { label: 'Siguiendo',  val: stats?.following_count ?? '—' },
+            { label: 'Audios',     val: audioCount,                    tab: 'audios'     as ProfileTab },
+            { label: 'Seguidores', val: stats?.followers_count ?? '—', tab: 'seguidores' as ProfileTab },
+            { label: 'Siguiendo',  val: stats?.following_count ?? '—', tab: 'siguiendo'  as ProfileTab },
           ].map(stat => (
-            <div key={stat.label} className="text-center">
-              <p className="text-white font-bold">{stat.val}</p>
+            <button
+              key={stat.label}
+              onClick={() => setTab(stat.tab)}
+              className={`flex-1 py-2 px-1 rounded-xl transition-colors text-center ${
+                tab === stat.tab ? 'bg-cyan-500/15 border border-cyan-500/30' : 'bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              <p className={`font-bold text-base ${tab === stat.tab ? 'text-cyan-400' : 'text-white'}`}>{stat.val}</p>
               <p className="text-gray-500 text-xs">{stat.label}</p>
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 px-4 py-4 border-b border-white/10">
-        {[
-          { icon: Music2,    label: 'Subidos', val: audioCount, color: 'text-cyan-400' },
-          { icon: GitBranch, label: 'Colabs',  val: 0,          color: 'text-fuchsia-400' },
-          { icon: Heart,     label: 'Likes',   val: 0,          color: 'text-rose-400' },
-        ].map(s => (
-          <div key={s.label} className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/5">
-            <s.icon className={`w-5 h-5 ${s.color}`} />
-            <p className="text-lg font-bold text-white">{s.val}</p>
-            <p className="text-xs text-gray-500">{s.label}</p>
-          </div>
+      {/* ── Tabs ── */}
+      <div className="flex border-b border-white/10 overflow-x-auto scrollbar-none">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
+              tab === t.id ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            {t.label}
+            {tab === t.id && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full gradient-cyan-lime" />
+            )}
+          </button>
         ))}
       </div>
 
+      {/* ── Tab content ── */}
       <div className="px-4 pt-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          {isOwnProfile ? 'Mis audios' : `Audios de @${profileUsername}`}
-        </p>
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
+        {loading && tab === 'audios' ? (
+          <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-cyan-400 animate-spin" /></div>
+        ) : tab === 'audios' ? (
+          tracks.length === 0
+            ? <p className="text-sm text-gray-500 text-center py-8">{isOwnProfile ? 'Todavía no subiste ningún audio.' : 'Este usuario no tiene audios todavía.'}</p>
+            : <div className="grid grid-cols-2 gap-3">{tracks.map(t => <AudioCard key={t.id} track={t} variant="large" />)}</div>
+
+        ) : tab === 'colabs' ? (
+          colabsLoading
+            ? <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-cyan-400 animate-spin" /></div>
+            : !colabs || colabs.length === 0
+              ? <p className="text-sm text-gray-500 text-center py-8">Todavía no hay colaboraciones.</p>
+              : <div className="grid grid-cols-2 gap-3">{colabs.map(t => <AudioCard key={t.id} track={t} variant="large" />)}</div>
+
+        ) : tab === 'likes' ? (
+          <div className="py-12 text-center">
+            <Heart className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+            <p className="text-sm text-gray-500">Los likes todavía no están implementados.</p>
           </div>
-        ) : tracks.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-8">
-            {isOwnProfile ? 'Todavía no subiste ningún audio.' : 'Este usuario no tiene audios todavía.'}
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {tracks.map(track => (
-              <AudioCard key={track.id} track={track} variant="large" />
-            ))}
-          </div>
-        )}
+
+        ) : tab === 'seguidores' ? (
+          followersLoading
+            ? <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-cyan-400 animate-spin" /></div>
+            : !followers || followers.length === 0
+              ? <p className="text-sm text-gray-500 text-center py-8">Todavía no hay seguidores.</p>
+              : <div className="space-y-2">{followers.map(u => <UserRow key={u.username} u={u} />)}</div>
+
+        ) : tab === 'siguiendo' ? (
+          followingLoading
+            ? <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-cyan-400 animate-spin" /></div>
+            : !following || following.length === 0
+              ? <p className="text-sm text-gray-500 text-center py-8">No sigue a nadie todavía.</p>
+              : <div className="space-y-2">{following.map(u => <UserRow key={u.username} u={u} />)}</div>
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+function UserRow({ u }: { u: UserCard }) {
+  const navigate = useNavigate();
+  const { user, openLoginModal } = useAppStore();
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchIsFollowing(u.username).then(setIsFollowing);
+  }, [u.username]);
+
+  const handleFollow = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) { openLoginModal(); return; }
+    if (user.username === u.username) return;
+    setLoading(true);
+    try {
+      if (isFollowing) { await unfollowUser(u.username); setIsFollowing(false); }
+      else             { await followUser(u.username);   setIsFollowing(true); }
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  };
+
+  const isMe = user?.username === u.username;
+
+  return (
+    <div
+      onClick={() => navigate(`/${u.username}`)}
+      className="flex items-center gap-3 p-3 rounded-xl bg-white/5 cursor-pointer hover:bg-white/10 transition-colors"
+    >
+      <div className="w-10 h-10 rounded-full gradient-cyan-lime flex items-center justify-center flex-shrink-0">
+        <span className="text-navy-900 font-bold text-sm">{u.username[0].toUpperCase()}</span>
+      </div>
+      <p className="flex-1 text-sm font-medium text-white">@{u.username}</p>
+      {!isMe && (
+        <button
+          onClick={handleFollow}
+          disabled={loading}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 disabled:opacity-50 ${
+            isFollowing
+              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+              : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'
+          }`}
+        >
+          {isFollowing ? <><UserCheck className="w-3 h-3" /> Siguiendo</> : <><UserPlus className="w-3 h-3" /> Seguir</>}
+        </button>
+      )}
     </div>
   );
 }
