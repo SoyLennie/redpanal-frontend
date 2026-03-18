@@ -8,6 +8,19 @@ export default {
     extend: {
       colors: {
         'navy-900': '#0a1628',
+        'secondary': '#94a3b8',
+        'tertiary': '#64748b',
+        'accent-cyan': '#00d4ff',
+        'accent-lime': '#a8e063',
+        'error': '#f87171',
+        'border-subtle': 'rgba(255,255,255,0.08)',
+        'border-default': 'rgba(255,255,255,0.15)',
+      },
+      borderRadius: {
+        'token-sm': '6px',
+        'token-md': '12px',
+        'token-lg': '20px',
+        'token-xl': '28px',
       },
       animation: {
         'slide-up': 'slide-up 0.3s ease-out',

@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { SideMenu } from '@/components/SideMenu';
 import { BottomNav } from '@/components/BottomNav';
 import { Player } from '@/components/Player';
+import { RecordFAB } from '@/components/RecordFAB';
 import { LoginModal } from '@/components/LoginModal';
 
 import { DescubriPage } from '@/pages/DescubriPage';
@@ -16,13 +17,14 @@ import { SearchPage } from '@/pages/SearchPage';
 
 function Layout() {
   return (
-    <div className="min-h-screen bg-[#0a1628]">
+    <div className="min-h-screen bg-navy-900">
       <Header />
       <SideMenu />
       <main className="pt-16">
         <Outlet />
       </main>
       <Player />
+      <RecordFAB />
       <BottomNav />
       <LoginModal />
     </div>

@@ -3,6 +3,7 @@ import { X, Play, Pause, Sparkles, Send, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 import type { AudioTrack } from '@/types';
 import type { CollabNode } from '@/api/audio';
+import { Z } from '@/lib/zIndex';
 
 // ── Agent definitions ────────────────────────────────────────────────────────
 
@@ -217,7 +218,7 @@ export function AgentPanel({ track, onClose, onAddToTree }: AgentPanelProps) {
 
   // ── Panel screen ────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-[60] flex items-end" onClick={onClose}>
+    <div className="fixed inset-0 flex items-end" style={{ zIndex: Z.agentPanel }} onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
         className="relative w-full bg-[#0f1f38] rounded-t-3xl p-5 pb-10 max-h-[85vh] overflow-y-auto"
@@ -233,13 +234,13 @@ export function AgentPanel({ track, onClose, onAddToTree }: AgentPanelProps) {
               <Sparkles className="w-5 h-5 text-fuchsia-400" />
               Agentes IA
             </h2>
-            <p className="text-gray-500 text-xs mt-0.5">Colaborá con músicos virtuales en "{track.title}"</p>
+            <p className="text-tertiary text-xs mt-0.5">Colaborá con músicos virtuales en "{track.title}"</p>
           </div>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
           >
-            <X className="w-4 h-4 text-gray-400" />
+            <X className="w-4 h-4 text-secondary" />
           </button>
         </div>
 
@@ -264,10 +265,10 @@ export function AgentPanel({ track, onClose, onAddToTree }: AgentPanelProps) {
             <span className="text-2xl">💬</span>
             <div className="text-left">
               <p className="text-white font-medium text-sm">Chat libre</p>
-              <p className="text-gray-500 text-xs">Pedí lo que quieras sin personaje asignado</p>
+              <p className="text-tertiary text-xs">Pedí lo que quieras sin personaje asignado</p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-500" />
+          <ChevronRight className="w-4 h-4 text-tertiary" />
         </button>
       </div>
     </div>
@@ -295,9 +296,9 @@ function AgentCard({
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-400 font-medium">
               {agent.role}
             </span>
-            <span className="text-[10px] text-gray-500">{agent.style}</span>
+            <span className="text-[10px] text-tertiary">{agent.style}</span>
           </div>
-          <p className="text-xs text-gray-400 mt-1 leading-relaxed">{agent.description}</p>
+          <p className="text-xs text-secondary mt-1 leading-relaxed">{agent.description}</p>
         </div>
       </div>
       <div className="flex gap-2">
@@ -349,16 +350,16 @@ function ProcessingScreen({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#0a1628] flex flex-col items-center justify-center px-6 text-center">
+    <div className="fixed inset-0 bg-navy-900 flex flex-col items-center justify-center px-6 text-center" style={{ zIndex: Z.agentPanel }}>
       {/* Avatar */}
       <div className="text-6xl mb-4">{agent.avatar}</div>
       <h2 className="text-white font-bold text-xl mb-1">{agent.name}</h2>
-      <p className="text-gray-500 text-sm mb-2">{agent.role} · {agent.style}</p>
+      <p className="text-tertiary text-sm mb-2">{agent.role} · {agent.style}</p>
 
       {/* Track badge */}
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8">
         <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-        <span className="text-xs text-gray-400 truncate max-w-[200px]">{track.title}</span>
+        <span className="text-xs text-secondary truncate max-w-[200px]">{track.title}</span>
       </div>
 
       {/* Animated waveform */}
@@ -379,7 +380,7 @@ function ProcessingScreen({
       <p className="text-fuchsia-300 text-sm font-medium min-h-[1.5rem] transition-all duration-500">
         {msgs[msgIndex]}
       </p>
-      <p className="text-gray-600 text-xs mt-2">No cerrés esta pantalla</p>
+      <p className="text-tertiary text-xs mt-2">No cerrés esta pantalla</p>
 
       <style>{`
         @keyframes pulse {
@@ -416,7 +417,7 @@ function ResultScreen({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end">
+    <div className="fixed inset-0 flex items-end" style={{ zIndex: Z.agentPanel }}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div className="relative w-full bg-[#0f1f38] rounded-t-3xl p-6 pb-10">
         <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
@@ -428,7 +429,7 @@ function ResultScreen({
             <h3 className="text-white font-bold text-lg leading-tight">
               {agent.name} terminó su trabajo
             </h3>
-            <p className="text-gray-500 text-xs">
+            <p className="text-tertiary text-xs">
               {agent.type === 'overdub' ? 'Overdub' : 'Remix'} · {agent.style}
             </p>
           </div>
@@ -452,7 +453,7 @@ function ResultScreen({
             <p className="text-xs font-medium text-white truncate">
               {agent.name} — sobre "{track.title}"
             </p>
-            <p className="text-[10px] text-gray-500 mt-0.5">Preview · {track.duration}</p>
+            <p className="text-[10px] text-tertiary mt-0.5">Preview · {track.duration}</p>
             {/* Static waveform */}
             <div className="flex items-end gap-px h-5 mt-1.5">
               {Array.from({ length: 32 }).map((_, i) => (
@@ -477,7 +478,7 @@ function ResultScreen({
           </button>
           <button
             onClick={onDiscard}
-            className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 text-sm hover:border-white/20 transition-colors"
+            className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-secondary text-sm hover:border-white/20 transition-colors"
           >
             Descartar
           </button>
@@ -526,23 +527,23 @@ function ChatScreen({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#0a1628] flex flex-col">
+    <div className="fixed inset-0 bg-navy-900 flex flex-col" style={{ zIndex: Z.agentPanel }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-white/10 flex-shrink-0">
         <button onClick={onBack} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5">
-          <X className="w-4 h-4 text-gray-400" />
+          <X className="w-4 h-4 text-secondary" />
         </button>
         <span className="text-xl">{agent.avatar}</span>
         <div>
           <p className="text-white font-semibold text-sm">{agent.name}</p>
-          <p className="text-gray-500 text-xs">{agent.role} · {agent.style}</p>
+          <p className="text-tertiary text-xs">{agent.role} · {agent.style}</p>
         </div>
       </div>
 
       {/* Track context badge */}
       <div className="flex items-center gap-2 px-4 py-2 bg-white/3 border-b border-white/5 flex-shrink-0">
         <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
-        <span className="text-xs text-gray-500 truncate">Hablando sobre: {track.title}</span>
+        <span className="text-xs text-tertiary truncate">Hablando sobre: {track.title}</span>
       </div>
 
       {/* Messages */}
@@ -628,23 +629,23 @@ function FreeChatScreen({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#0a1628] flex flex-col">
+    <div className="fixed inset-0 bg-navy-900 flex flex-col" style={{ zIndex: Z.agentPanel }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-white/10 flex-shrink-0">
         <button onClick={onBack} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5">
-          <X className="w-4 h-4 text-gray-400" />
+          <X className="w-4 h-4 text-secondary" />
         </button>
         <span className="text-xl">💬</span>
         <div>
           <p className="text-white font-semibold text-sm">Chat libre</p>
-          <p className="text-gray-500 text-xs">Sin personaje asignado</p>
+          <p className="text-tertiary text-xs">Sin personaje asignado</p>
         </div>
       </div>
 
       {/* Track context badge */}
       <div className="flex items-center gap-2 px-4 py-2 bg-white/3 border-b border-white/5 flex-shrink-0">
         <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
-        <span className="text-xs text-gray-500 truncate">Hablando sobre: {track.title}</span>
+        <span className="text-xs text-tertiary truncate">Hablando sobre: {track.title}</span>
       </div>
 
       {/* Messages */}
@@ -713,7 +714,7 @@ function ChatBubble({
     <div className="flex items-start gap-2">
       <span className="text-lg flex-shrink-0 mt-0.5">{agentAvatar}</span>
       <div className="max-w-[80%]">
-        <p className="text-[10px] text-gray-500 mb-1 font-medium">{agentName}</p>
+        <p className="text-[10px] text-tertiary mb-1 font-medium">{agentName}</p>
         <div className="px-4 py-2.5 rounded-2xl rounded-tl-sm bg-white/5 border border-white/10">
           <p className="text-sm text-gray-200 leading-relaxed">{msg.text}</p>
         </div>

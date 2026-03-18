@@ -171,7 +171,7 @@ export function ArchivoPage() {
   if (!track) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center pb-32">
-        <p className="text-gray-500 text-sm">Audio no encontrado.</p>
+        <p className="text-tertiary text-sm">Audio no encontrado.</p>
       </div>
     );
   }
@@ -190,7 +190,7 @@ export function ArchivoPage() {
               onClick={() => navigate(`/${track.artist.replace(/^@/, '')}`)}
               className="text-cyan-400 text-sm hover:underline text-left"
             >{track.artist}</button>
-            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+            <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
               <span>{track.instrument}</span>
               <span>·</span>
               <span>{track.genre}</span>
@@ -215,7 +215,7 @@ export function ArchivoPage() {
             );
           })}
         </div>
-        <div className="flex justify-between text-xs text-gray-600 mb-3">
+        <div className="flex justify-between text-xs text-tertiary mb-3">
           <span>{formatTime(progress, track.duration)}</span>
           <span>{track.duration}</span>
         </div>
@@ -263,7 +263,7 @@ export function ArchivoPage() {
           </button>
         </div>
 
-        <div className="flex gap-4 mt-3 text-xs text-gray-500">
+        <div className="flex gap-4 mt-3 text-xs text-tertiary">
           {(track.collaborations || 0) > 0 && (
             <span className="text-cyan-400">{track.collaborations} colaboraciones</span>
           )}
@@ -278,7 +278,7 @@ export function ArchivoPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-3 text-sm font-medium transition-colors capitalize relative ${
-              tab === t ? 'text-cyan-400' : 'text-gray-500'
+              tab === t ? 'text-cyan-400' : 'text-tertiary'
             }`}
           >
             {t}
@@ -294,12 +294,12 @@ export function ArchivoPage() {
         {tab === 'historia' && (
           <div>
             {loadingTree ? (
-              <div className="py-8 text-center text-sm text-gray-500">Cargando árbol...</div>
+              <div className="py-8 text-center text-sm text-tertiary">Cargando árbol...</div>
             ) : !collabRoot ? (
-              <div className="py-8 text-center text-sm text-gray-500">Sin colaboraciones todavía.</div>
+              <div className="py-8 text-center text-sm text-tertiary">Sin colaboraciones todavía.</div>
             ) : (
               <>
-                <p className="text-xs text-gray-500 mb-4">
+                <p className="text-xs text-tertiary mb-4">
                   Árbol de colaboraciones — {countNodes(collabRoot) - 1} derivaciones
                 </p>
                 <CollabTreeNode node={collabRoot} depth={0} currentSlug={slug!} />
@@ -310,12 +310,12 @@ export function ArchivoPage() {
 
         {tab === 'comentarios' && (
           <div className="space-y-4">
-            <p className="text-xs text-gray-500">Los comentarios son permanentes y forman la historia del audio.</p>
+            <p className="text-xs text-tertiary">Los comentarios son permanentes y forman la historia del audio.</p>
 
             {loadingComments ? (
-              <div className="py-8 text-center text-sm text-gray-500">Cargando comentarios...</div>
+              <div className="py-8 text-center text-sm text-tertiary">Cargando comentarios...</div>
             ) : comments.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-500">Todavía no hay comentarios. Sé el primero.</div>
+              <div className="py-8 text-center text-sm text-tertiary">Todavía no hay comentarios. Sé el primero.</div>
             ) : (
               comments.map(c => {
                 const isAuthor = user?.username === c.user.username;
@@ -325,7 +325,7 @@ export function ArchivoPage() {
                       {c.user.avatar_url ? (
                         <img src={c.user.avatar_url} alt={c.user.username} className="w-6 h-6 rounded-full object-cover" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-gray-400">
+                        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-secondary">
                           {c.user.username[0].toUpperCase()}
                         </div>
                       )}
@@ -333,7 +333,7 @@ export function ArchivoPage() {
                         @{c.user.username}
                       </span>
                       {isAuthor && <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">autor</span>}
-                      <span className="text-xs text-gray-600 ml-auto">{timeAgo(c.created_at)}</span>
+                      <span className="text-xs text-tertiary ml-auto">{timeAgo(c.created_at)}</span>
                     </div>
                     <div
                       className="text-sm text-gray-300 [&_a]:text-cyan-400 [&_a]:hover:underline"
@@ -351,9 +351,9 @@ export function ArchivoPage() {
                 onChange={e => setCommentInput(e.target.value)}
                 placeholder="Comentá, mencioná con @ o taggeá con #"
                 rows={2}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50 resize-none"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-tertiary focus:outline-none focus:border-cyan-500/50 resize-none"
               />
-              {commentError && <p className="text-xs text-rose-400">{commentError}</p>}
+              {commentError && <p className="text-xs text-error">{commentError}</p>}
               <button
                 onClick={() => {
                   if (!user) { openLoginModal(() => handlePostComment()); return; }
@@ -378,15 +378,15 @@ export function ArchivoPage() {
               { label: 'Licencia', value: 'Creative Commons BY-SA 4.0' },
             ].filter(row => row.value).map(({ label, value }) => (
               <div key={label} className="flex justify-between py-2 border-b border-white/5">
-                <span className="text-sm text-gray-500">{label}</span>
+                <span className="text-sm text-tertiary">{label}</span>
                 <span className="text-sm text-white">{value}</span>
               </div>
             ))}
             <div className="pt-2">
-              <span className="text-sm text-gray-500 block mb-2">Tags</span>
+              <span className="text-sm text-tertiary block mb-2">Tags</span>
               <div className="flex flex-wrap gap-2">
                 {track.tags.map(tag => (
-                  <span key={tag} className="px-2.5 py-1 rounded-full bg-white/5 text-xs text-gray-400">#{tag}</span>
+                  <span key={tag} className="px-2.5 py-1 rounded-full bg-white/5 text-xs text-secondary">#{tag}</span>
                 ))}
               </div>
             </div>
@@ -441,7 +441,7 @@ function CollabTreeNode({ node, depth, currentSlug }: { node: CollabNode; depth:
         }`}
       >
         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold ${
-          isCurrent ? 'gradient-cyan-lime text-navy-900' : 'bg-white/10 text-gray-400'
+          isCurrent ? 'gradient-cyan-lime text-navy-900' : 'bg-white/10 text-secondary'
         }`}>
           {node.use_type.slice(0, 2).toUpperCase()}
         </div>
@@ -470,7 +470,7 @@ function CollabTreeNode({ node, depth, currentSlug }: { node: CollabNode; depth:
             {node.use_type}
           </span>
           {node.collaborations.length > 0 && (
-            <span className="text-[10px] text-gray-500 flex items-center gap-0.5 ml-1">
+            <span className="text-[10px] text-tertiary flex items-center gap-0.5 ml-1">
               <Users className="w-3 h-3" /> {node.collaborations.length}
             </span>
           )}

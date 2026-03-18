@@ -1,6 +1,7 @@
 import { X, Info, HelpCircle, Mail, Github, Heart, LogIn, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
+import { Z } from '@/lib/zIndex';
 
 const menuItems = [
   { label: '¿Qué es RedPanal?', icon: Info, action: 'redpanal' },
@@ -24,17 +25,19 @@ export function SideMenu() {
     <>
       {/* Backdrop */}
       {menuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-fade-in"
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+          style={{ zIndex: Z.sideMenu - 1 }}
           onClick={closeMenu}
         />
       )}
       
       {/* Menu panel */}
-      <nav 
-        className={`fixed top-0 left-0 h-full w-72 z-50 glass-strong transform transition-transform duration-300 ease-out ${
+      <nav
+        className={`fixed top-0 left-0 h-full w-72 glass-strong transform transition-transform duration-300 ease-out ${
           menuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ zIndex: Z.sideMenu }}
       >
         {/* Header */}
         <div className="p-4 border-b border-white/10">
@@ -45,7 +48,7 @@ export function SideMenu() {
               </div>
               <div>
                 <h3 className="font-semibold text-white">Menú</h3>
-                <p className="text-xs text-gray-400">RedPanal.org</p>
+                <p className="text-xs text-secondary">RedPanal.org</p>
               </div>
             </div>
             <button 
@@ -87,7 +90,7 @@ export function SideMenu() {
               </div>
               <button
                 onClick={() => { clearAuth(); closeMenu(); }}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-rose-400 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-secondary hover:text-rose-400 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Salir
@@ -105,7 +108,7 @@ export function SideMenu() {
             </div>
           )}
 
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-500 pb-4 pt-2">
+          <div className="flex items-center justify-center gap-2 text-sm text-tertiary pb-4 pt-2">
             <span>Hecho con</span>
             <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
             <span>y código libre</span>

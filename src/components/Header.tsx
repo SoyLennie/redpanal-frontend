@@ -1,13 +1,14 @@
 import { Menu, Search, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
+import { Z } from '@/lib/zIndex';
 
 export function Header() {
   const navigate = useNavigate();
   const { toggleMenu, user, openLoginModal, clearAuth } = useAppStore();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
+    <header className="fixed top-0 left-0 right-0" style={{ zIndex: Z.header }}>
       {/* Glassmorphism background */}
       <div className="glass-strong px-4 h-16 flex items-center justify-between">
         <button

@@ -28,8 +28,8 @@ const VERB_GLOBAL: Record<string, VerbCfg> = {
   audio_collaboration: { label: 'colaboró en',        icon: GitBranch,  color: 'text-emerald-400 bg-emerald-500/10' },
 };
 
-const DEFAULT_PERSONAL: VerbCfg = { label: 'publicaste', icon: Music2, color: 'text-gray-400 bg-white/5' };
-const DEFAULT_GLOBAL:   VerbCfg = { label: 'publicó',    icon: Music2, color: 'text-gray-400 bg-white/5' };
+const DEFAULT_PERSONAL: VerbCfg = { label: 'publicaste', icon: Music2, color: 'text-secondary bg-white/5' };
+const DEFAULT_GLOBAL:   VerbCfg = { label: 'publicó',    icon: Music2, color: 'text-secondary bg-white/5' };
 
 interface ActivityItemProps {
   activity: Activity;
@@ -59,12 +59,12 @@ export function ActivityItem({ activity: a, mode = 'personal' }: ActivityItemPro
               className="text-cyan-400 font-medium hover:underline"
             >@{actor} </button>
           )}
-          <span className="text-gray-400">{cfg.label} </span>
+          <span className="text-secondary">{cfg.label} </span>
           <span className={objectSlug ? 'text-white font-medium' : 'text-gray-300'}>
             "{objectName}"
           </span>
         </p>
-        <p className="text-xs text-gray-600 mt-0.5">{timeAgo(a.timestamp)}</p>
+        <p className="text-xs text-tertiary mt-0.5">{timeAgo(a.timestamp)}</p>
       </div>
     </div>
   );

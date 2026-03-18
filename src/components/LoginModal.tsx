@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import { Z } from '@/lib/zIndex';
 
 const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
 
@@ -44,7 +45,7 @@ export function LoginModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center" onClick={closeLoginModal}>
+    <div className="fixed inset-0 flex items-end sm:items-center justify-center" style={{ zIndex: Z.loginModal }} onClick={closeLoginModal}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
         className="relative w-full sm:max-w-sm bg-[#0f1f38] rounded-t-3xl sm:rounded-3xl p-6 pb-10 sm:pb-6"
@@ -61,28 +62,28 @@ export function LoginModal() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Usuario</label>
+            <label className="text-xs font-semibold text-secondary uppercase tracking-wider block mb-1.5">Usuario</label>
             <input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
               autoComplete="username"
               autoFocus
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500/50"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-tertiary focus:outline-none focus:border-cyan-500/50"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Contraseña</label>
+            <label className="text-xs font-semibold text-secondary uppercase tracking-wider block mb-1.5">Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               autoComplete="current-password"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500/50"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-tertiary focus:outline-none focus:border-cyan-500/50"
             />
           </div>
 
-          {error && <p className="text-sm text-rose-400">{error}</p>}
+          {error && <p className="text-sm text-error">{error}</p>}
 
           <button
             type="submit"

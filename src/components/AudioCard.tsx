@@ -120,10 +120,10 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
               </h4>
               <button
                 onClick={e => { e.stopPropagation(); navigate(`/${track.artist.replace(/^@/, '')}`); }}
-                className="text-sm text-gray-400 hover:text-cyan-400 transition-colors text-left"
+                className="text-sm text-secondary hover:text-cyan-400 transition-colors text-left"
               >{track.artist}</button>
             </div>
-            <span className="text-xs text-gray-500">{track.duration}</span>
+            <span className="text-xs text-tertiary">{track.duration}</span>
           </div>
           
           {/* Tags */}
@@ -140,7 +140,7 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
           
           {/* Stats + Colaborar */}
           <div className="flex items-center justify-between mt-3">
-            <span className="text-xs text-gray-500">{track.collaborations ?? 0} colaboraciones</span>
+            <span className="text-xs text-tertiary">{track.collaborations ?? 0} colaboraciones</span>
             <button
               onClick={handleColabClick}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity hover:bg-cyan-500/20"
@@ -209,7 +209,7 @@ export function AudioCard({ track, variant = 'default' }: AudioCardProps) {
         </h4>
         <button
           onClick={e => { e.stopPropagation(); navigate(`/${track.artist.replace(/^@/, '')}`); }}
-          className="text-xs text-gray-500 truncate hover:text-cyan-400 transition-colors text-left"
+          className="text-xs text-tertiary truncate hover:text-cyan-400 transition-colors text-left"
         >{track.artist}</button>
       </div>
     </div>

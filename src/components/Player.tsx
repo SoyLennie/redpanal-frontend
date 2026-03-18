@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Heart, MessageCircle, Download, Share2, ChevronUp, ChevronDown, X, GitBranch, MoreHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
+import { Z } from '@/lib/zIndex';
 
 const typeColors: Record<string, string> = {
   loop: 'from-fuchsia-500 to-purple-600',
@@ -139,9 +140,9 @@ export function Player() {
 
   if (!currentTrack) {
     return (
-      <div className="fixed bottom-[72px] left-0 right-0 z-40">
+      <div className="fixed bottom-[72px] left-0 right-0" style={{ zIndex: Z.playerMini }}>
         <div className="mx-4 glass-strong rounded-2xl px-4 py-3">
-          <div className="flex items-center justify-center gap-3 text-gray-500">
+          <div className="flex items-center justify-center gap-3 text-tertiary">
             <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
               <Play className="w-4 h-4" />
             </div>
@@ -155,7 +156,7 @@ export function Player() {
   return (
     <>
       {/* Mini player */}
-      <div className="fixed bottom-[72px] left-0 right-0 z-40">
+      <div className="fixed bottom-[72px] left-0 right-0" style={{ zIndex: Z.playerMini }}>
         <div
           onClick={expandPlayer}
           className="mx-4 glass-strong rounded-2xl overflow-hidden cursor-pointer hover:border-cyan-500/30 transition-colors"
@@ -176,7 +177,7 @@ export function Player() {
               <h4 className="font-medium text-white text-sm truncate">{currentTrack.title}</h4>
               <button
                 onClick={e => { e.stopPropagation(); navigate(`/${currentTrack.artist.replace(/^@/, '')}`); }}
-                className="text-xs text-gray-400 truncate hover:text-cyan-400 transition-colors text-left"
+                className="text-xs text-secondary truncate hover:text-cyan-400 transition-colors text-left"
               >{currentTrack.artist}</button>
             </div>
             {isPlaying && (
@@ -207,19 +208,19 @@ export function Player() {
 
       {/* Expanded player */}
       {playerExpanded && (
-        <div className="fixed inset-0 z-50 flex items-end">
+        <div className="fixed inset-0 flex items-end" style={{ zIndex: Z.playerExpanded }}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={collapsePlayer} />
-          <div className="relative w-full bg-gradient-to-t from-[#0a1628] via-[#0a1628] to-[#1a2a3d] rounded-t-3xl overflow-hidden max-h-[92vh] overflow-y-auto">
+          <div className="relative w-full bg-gradient-to-t from-navy-900 via-navy-900 to-[#1a2a3d] rounded-t-3xl overflow-hidden max-h-[92vh] overflow-y-auto">
 
             {/* Handle */}
-            <div className="flex justify-center pt-3 pb-2 sticky top-0 bg-[#0a1628]/90 backdrop-blur-sm z-10">
+            <div className="flex justify-center pt-3 pb-2 sticky top-0 bg-navy-900/90 backdrop-blur-sm z-10">
               <div className="w-12 h-1 bg-white/20 rounded-full" />
             </div>
 
             <div className="px-6 flex items-center justify-between">
               <button onClick={collapsePlayer}><ChevronDown className="w-6 h-6 text-gray-400" /></button>
               <div className="text-center">
-                <p className="text-xs text-gray-500">Reproduciendo</p>
+                <p className="text-xs text-tertiary">Reproduciendo</p>
                 <p className="text-xs text-cyan-400 font-medium">{currentTrack.instrument} · {currentTrack.genre}</p>
               </div>
               <button onClick={collapsePlayer}><X className="w-5 h-5 text-gray-400" /></button>
@@ -277,7 +278,7 @@ export function Player() {
                   style={{ left: `calc(${progress * 100}% - 8px)` }}
                 />
               </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <div className="flex justify-between mt-2 text-xs text-tertiary">
                 <span>{formatTime(currentSeconds)}</span>
                 <span>{formatTime(totalSeconds)}</span>
               </div>
@@ -312,7 +313,7 @@ export function Player() {
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${active ? activeClass : 'bg-white/5 group-hover:bg-cyan-500/20'}`}>
                       <Icon className={`w-5 h-5 transition-colors ${active ? activeIconClass : 'text-gray-400 group-hover:text-cyan-400'}`} />
                     </div>
-                    <span className="text-[11px] text-gray-500">{label}</span>
+                    <span className="text-[11px] text-tertiary">{label}</span>
                   </button>
                 ))}
               </div>
@@ -367,7 +368,7 @@ export function Player() {
             {/* Queue */}
             {queue.length > 0 ? (
               <div className="px-6 pt-5 pb-24">
-                <h4 className="text-sm font-semibold text-gray-400 mb-3">A continuación ({queue.length})</h4>
+                <h4 className="text-sm font-semibold text-secondary mb-3">A continuación ({queue.length})</h4>
                 <div className="space-y-2">
                   {queue.slice(0, 4).map(t => (
                     <div key={t.id} className="flex items-center gap-3 p-2 rounded-xl bg-white/5">
@@ -376,9 +377,9 @@ export function Player() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-white truncate">{t.title}</p>
-                        <p className="text-xs text-gray-500">{t.artist}</p>
+                        <p className="text-xs text-tertiary">{t.artist}</p>
                       </div>
-                      <span className="text-xs text-gray-500">{t.duration}</span>
+                      <span className="text-xs text-tertiary">{t.duration}</span>
                     </div>
                   ))}
                 </div>
