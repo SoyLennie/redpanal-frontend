@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Heart, MessageCircle, Download, Share2, ChevronUp, ChevronDown, X, GitBranch, MoreHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
@@ -33,7 +33,6 @@ export function Player() {
   const [liked, setLiked] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [realDuration, setRealDuration] = useState<number | null>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(new Audio());
 
   // ── Swap source when track changes ──────────────────────────────────────
@@ -110,18 +109,6 @@ export function Player() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Seek ─────────────────────────────────────────────────────────────────
-  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!progressBarRef.current) return;
-    const rect = progressBarRef.current.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const audio = audioRef.current;
-    if (audio.duration && isFinite(audio.duration)) {
-      audio.currentTime = ratio * audio.duration;
-    }
-    setProgress(ratio);
-  }, [setProgress]);
-
   // ── Duration display ─────────────────────────────────────────────────────
   const formatTime = (seconds: number): string => {
     if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
@@ -140,7 +127,7 @@ export function Player() {
 
   if (!currentTrack) {
     return (
-      <div className="fixed bottom-[72px] left-0 right-0" style={{ zIndex: Z.playerMini }}>
+      <div className="fixed left-0 right-0" style={{ zIndex: Z.playerMini, bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="mx-4 glass-strong rounded-2xl px-4 py-3">
           <div className="flex items-center justify-center gap-3 text-tertiary">
             <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
@@ -156,7 +143,7 @@ export function Player() {
   return (
     <>
       {/* Mini player */}
-      <div className="fixed bottom-[72px] left-0 right-0" style={{ zIndex: Z.playerMini }}>
+      <div className="fixed left-0 right-0" style={{ zIndex: Z.playerMini, bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
         <div
           onClick={expandPlayer}
           className="mx-4 glass-strong rounded-2xl overflow-hidden cursor-pointer hover:border-cyan-500/30 transition-colors"
@@ -264,18 +251,35 @@ export function Player() {
 
             {/* Interactive progress bar */}
             <div className="px-8 pt-5">
-              <div
-                ref={progressBarRef}
-                onClick={handleSeek}
-                className="relative h-2 bg-white/10 rounded-full cursor-pointer group"
-              >
-                <div
-                  className="h-full gradient-cyan-lime rounded-full"
-                  style={{ width: `${progress * 100}%`, transition: 'width 0.1s linear' }}
-                />
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                  style={{ left: `calc(${progress * 100}% - 8px)` }}
+              <div className="relative">
+                {/* Waveform visual — decorativo */}
+                <div className="flex items-end gap-0.5 h-10 pointer-events-none" aria-hidden="true">
+                  {WAVEFORM_BARS.map((height, i) => (
+                    <div
+                      key={i}
+                      className={`flex-1 rounded-sm transition-colors duration-100 ${
+                        i / WAVEFORM_BARS.length <= progress ? 'bg-cyan-400' : 'bg-white/20'
+                      }`}
+                      style={{ height: `${Math.max(height * 100, 10)}%` }}
+                    />
+                  ))}
+                </div>
+                {/* Seek real — accesible */}
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round(progress * 100)}
+                  onChange={(e) => {
+                    const ratio = Number(e.target.value) / 100;
+                    const audio = audioRef.current;
+                    if (audio.duration && isFinite(audio.duration)) {
+                      audio.currentTime = ratio * audio.duration;
+                    }
+                    setProgress(ratio);
+                  }}
+                  className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                  aria-label="Posición de reproducción"
                 />
               </div>
               <div className="flex justify-between mt-2 text-xs text-tertiary">

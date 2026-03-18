@@ -187,7 +187,7 @@ export function DescubriPage() {
 
       {/* "+ más tags" bottom sheet */}
       {tagSheetOpen && (
-        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setTagSheetOpen(false)}>
+        <div className="fixed inset-0 flex items-end" style={{ zIndex: Z.modal }} onClick={() => setTagSheetOpen(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
             className="relative w-full bg-[#0f1f38] rounded-t-3xl p-6 pb-10 max-h-[70vh] overflow-y-auto"

@@ -58,10 +58,10 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0" style={{ zIndex: Z.bottomNav }}>
+    <nav className="fixed bottom-0 left-0 right-0 pb-safe" style={{ zIndex: Z.bottomNav }}>
       <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
-      <div className="glass-strong px-2 pb-safe">
-        <div className="flex items-center justify-around h-16">
+      <div className="glass-strong px-2">
+        <div className="flex items-center justify-around h-[72px]">
           {navItems.map((item) => {
             const isActive = item.match(location.pathname, user?.username);
             const Icon = item.icon;

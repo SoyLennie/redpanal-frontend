@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Lock, Globe, MessageSquare, Send, X } from 'lucide-react';
+import { Z } from '@/lib/zIndex';
 
 interface Assembly {
   id: string;
@@ -181,7 +182,7 @@ export function AsambleaPage() {
 
       {/* New assembly dialog */}
       {showNewDialog && (
-        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowNewDialog(false)}>
+        <div className="fixed inset-0 flex items-end" style={{ zIndex: Z.modal }} onClick={() => setShowNewDialog(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div
             className="relative w-full bg-[#0f1f38] rounded-t-3xl p-6 pb-10"
