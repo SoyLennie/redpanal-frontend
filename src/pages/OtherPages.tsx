@@ -195,7 +195,7 @@ export function PerfilPage() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex border-b border-white/10 overflow-x-auto scrollbar-none">
+      <div className="flex border-b border-white/10 overflow-x-auto scrollbar-hide">
         {TABS.map(t => (
           <button
             key={t.id}

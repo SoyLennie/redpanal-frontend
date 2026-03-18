@@ -62,10 +62,12 @@ interface SourceAudio {
 export function GrabarPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const sourceAudio = (location.state as { sourceAudio?: SourceAudio } | null)?.sourceAudio;
+  const locationState = location.state as { sourceAudio?: SourceAudio; startStep?: Step } | null;
+  const sourceAudio = locationState?.sourceAudio;
+  const startStep = locationState?.startStep;
   const { user, openLoginModal, playTrack } = useAppStore();
 
-  const [step, setStep] = useState<Step>('choose');
+  const [step, setStep] = useState<Step>(startStep ?? 'choose');
   const [name, setName] = useState('');
   const [audioType, setAudioType] = useState('');
   const [genre, setGenre] = useState('');

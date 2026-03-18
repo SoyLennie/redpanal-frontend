@@ -6,12 +6,28 @@
   * {
     box-sizing: border-box;
   }
+  html {
+    /* Reserve scrollbar gutter so the viewport width never shifts when a
+       vertical scrollbar appears or disappears (prevents fixed nav width jump). */
+    scrollbar-gutter: stable;
+    overflow-x: hidden;
+  }
   body {
     margin: 0;
     background-color: #0a1628;
     color: white;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+}
+
+/* Fix iOS Safari "100vh > visible area" bug.
+   min-h-screen becomes the SMALL viewport height (browser chrome always shown),
+   so short pages never exceed the visible area and the fixed bottom nav stays stable. */
+@supports (min-height: 100svh) {
+  .min-h-screen {
+    min-height: 100svh;
   }
 }
 

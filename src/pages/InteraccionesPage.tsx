@@ -38,7 +38,7 @@ export function InteraccionesPage() {
   }
 
   return (
-    <div className="px-4 pt-4 pb-32">
+    <div className="min-h-screen px-4 pt-4 pb-32">
       <h1 className="text-xl font-bold text-white mb-5">Interacciones</h1>
 
       {loading ? (

@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, X, Mic, Play, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AudioCard } from '@/components/AudioCard';
 import { useAppStore } from '@/store/appStore';
 import { fetchAudioList, fetchPopularTags } from '@/api/audio';
+import { HomeFeed } from '@/components/HomeFeed';
 import type { AudioTrack } from '@/types';
 import type { PopularTag } from '@/api/audio';
 
@@ -16,7 +17,21 @@ const placeholders = [
   'Buscá samples de voz...',
 ];
 
+// ── Public entry point ────────────────────────────────────────────────────────
+// Logged-in users on '/' get HomeFeed; '/descubri' always shows discovery.
 export function DescubriPage() {
+  const location = useLocation();
+  const { user } = useAppStore();
+
+  if (user && location.pathname !== '/descubri') {
+    return <HomeFeed />;
+  }
+
+  return <DiscoveryContent />;
+}
+
+// ── Discovery content (tag browsing, horizontal scrolls) ──────────────────────
+function DiscoveryContent() {
   const navigate = useNavigate();
 
   // Home sections (no tag active)
@@ -140,49 +155,49 @@ export function DescubriPage() {
 
       {/* Main content */}
       <div className="pt-2">
-          {isLoading ? (
-            <div className="px-4 space-y-6">
-              {[1, 2].map(i => (
-                <div key={i}>
-                  <div className="h-4 w-24 bg-white/5 rounded mb-3 animate-pulse" />
-                  <div className="flex gap-3 overflow-hidden">
-                    {[1, 2, 3].map(j => (
-                      <div key={j} className="flex-shrink-0 w-36 aspect-square rounded-2xl bg-white/5 animate-pulse" />
-                    ))}
-                  </div>
+        {isLoading ? (
+          <div className="px-4 space-y-6">
+            {[1, 2].map(i => (
+              <div key={i}>
+                <div className="h-4 w-24 bg-white/5 rounded mb-3 animate-pulse" />
+                <div className="flex gap-3 overflow-hidden">
+                  {[1, 2, 3].map(j => (
+                    <div key={j} className="flex-shrink-0 w-36 aspect-square rounded-2xl bg-white/5 animate-pulse" />
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : isEmpty ? (
-            <div className="text-center py-16 px-4">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Mic className="w-8 h-8 text-gray-600" />
               </div>
-              <h3 className="text-white font-semibold mb-2">
-                {selectedTag ? `No hay audios con #${selectedTag.name}` : 'Todavía no hay contenido'}
-              </h3>
-              <p className="text-gray-500 text-sm mb-4">¿Querés ser el primero?</p>
-              <button
-                onClick={() => navigate('/grabar')}
-                className="px-6 py-2.5 rounded-full gradient-cyan-lime text-navy-900 text-sm font-semibold"
-              >
-                Grabar ahora
-              </button>
+            ))}
+          </div>
+        ) : isEmpty ? (
+          <div className="text-center py-16 px-4">
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+              <Mic className="w-8 h-8 text-gray-600" />
             </div>
-          ) : selectedTag ? (
-            <div className="px-4 space-y-6">
-              <ScrollSection
-                title={`#${selectedTag.name} — ${tagTracks.length} audios`}
-                tracks={tagTracks}
-              />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <ScrollSection title="🕐 Novedades" tracks={novedades} />
-              <ScrollSection title="🔥 Activos" tracks={activos} />
-            </div>
-          )}
-        </div>
+            <h3 className="text-white font-semibold mb-2">
+              {selectedTag ? `No hay audios con #${selectedTag.name}` : 'Todavía no hay contenido'}
+            </h3>
+            <p className="text-gray-500 text-sm mb-4">¿Querés ser el primero?</p>
+            <button
+              onClick={() => navigate('/grabar')}
+              className="px-6 py-2.5 rounded-full gradient-cyan-lime text-navy-900 text-sm font-semibold"
+            >
+              Grabar ahora
+            </button>
+          </div>
+        ) : selectedTag ? (
+          <div className="px-4 space-y-6">
+            <ScrollSection
+              title={`#${selectedTag.name} — ${tagTracks.length} audios`}
+              tracks={tagTracks}
+            />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <ScrollSection title="🕐 Novedades" tracks={novedades} />
+            <ScrollSection title="🔥 Activos" tracks={activos} />
+          </div>
+        )}
+      </div>
 
       {/* "+ más tags" bottom sheet */}
       {tagSheetOpen && (

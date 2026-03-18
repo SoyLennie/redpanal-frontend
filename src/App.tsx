@@ -4,7 +4,6 @@ import { Header } from '@/components/Header';
 import { SideMenu } from '@/components/SideMenu';
 import { BottomNav } from '@/components/BottomNav';
 import { Player } from '@/components/Player';
-import { RecordFAB } from '@/components/RecordFAB';
 import { LoginModal } from '@/components/LoginModal';
 
 import { DescubriPage } from '@/pages/DescubriPage';
@@ -24,7 +23,6 @@ function Layout() {
         <Outlet />
       </main>
       <Player />
-      <RecordFAB />
       <BottomNav />
       <LoginModal />
     </div>

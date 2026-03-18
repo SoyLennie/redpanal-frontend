@@ -23,6 +23,16 @@ export async function fetchMyActivity(): Promise<Activity[]> {
   return res.json();
 }
 
+export async function fetchFeed(): Promise<Activity[]> {
+  const token = getToken();
+  if (!token) return [];
+  const res = await fetch(`${API_BASE}/activity/feed/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
 export async function fetchGlobalActivity(): Promise<Activity[]> {
   const res = await fetch(`${API_BASE}/activity/global/`);
   if (!res.ok) return [];
