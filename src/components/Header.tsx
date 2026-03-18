@@ -13,7 +13,7 @@ export function Header() {
       <div className="glass-strong px-4 h-16 flex items-center justify-between">
         <button
           onClick={toggleMenu}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors md:hidden"
         >
           <Menu className="w-5 h-5 text-cyan-400" />
         </button>
@@ -25,10 +25,20 @@ export function Header() {
           <span className="text-xl font-bold text-gradient">RedPanal</span>
         </div>
 
+        {/* Desktop inline search */}
+        <button
+          onClick={() => navigate('/buscar')}
+          className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-gray-500 hover:border-white/20 transition-colors w-64"
+        >
+          <Search className="w-4 h-4 text-gray-500 flex-shrink-0" />
+          <span>Buscar en RedPanal...</span>
+        </button>
+
         <div className="flex items-center gap-2">
+          {/* Mobile search icon */}
           <button
             onClick={() => navigate('/buscar')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors md:hidden"
           >
             <Search className="w-5 h-5 text-cyan-400" />
           </button>
@@ -42,13 +52,24 @@ export function Header() {
               {user.username[0].toUpperCase()}
             </button>
           ) : (
-            <button
-              onClick={() => openLoginModal()}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
-              title="Iniciar sesión"
-            >
-              <LogIn className="w-5 h-5 text-cyan-400" />
-            </button>
+            <>
+              {/* Desktop login button */}
+              <button
+                onClick={() => openLoginModal()}
+                className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                Iniciar sesión
+              </button>
+              {/* Mobile login icon */}
+              <button
+                onClick={() => openLoginModal()}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-colors md:hidden"
+                title="Iniciar sesión"
+              >
+                <LogIn className="w-5 h-5 text-cyan-400" />
+              </button>
+            </>
           )}
         </div>
       </div>

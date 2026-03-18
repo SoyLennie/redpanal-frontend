@@ -127,7 +127,10 @@ export function Player() {
 
   if (!currentTrack) {
     return (
-      <div className="fixed left-0 right-0" style={{ zIndex: Z.playerMini, bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
+      <div
+        className="fixed left-0 right-0 md:left-56 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-0"
+        style={{ zIndex: Z.playerMini }}
+      >
         <div className="mx-4 glass-strong rounded-2xl px-4 py-3">
           <div className="flex items-center justify-center gap-3 text-tertiary">
             <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
@@ -143,7 +146,10 @@ export function Player() {
   return (
     <>
       {/* Mini player */}
-      <div className="fixed left-0 right-0" style={{ zIndex: Z.playerMini, bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}>
+      <div
+        className="fixed left-0 right-0 md:left-56 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-0"
+        style={{ zIndex: Z.playerMini }}
+      >
         <div
           onClick={expandPlayer}
           className="mx-4 glass-strong rounded-2xl overflow-hidden cursor-pointer hover:border-cyan-500/30 transition-colors"

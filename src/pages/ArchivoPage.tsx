@@ -177,221 +177,228 @@ export function ArchivoPage() {
   }
 
   return (
-    <div className="pb-40 min-h-screen">
-      {/* Waveform + Player */}
-      <div className="px-4 pt-4 pb-4 border-b border-white/10">
-        <div className="flex items-start gap-3 mb-4">
-          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${typeColors[track.type]} flex items-center justify-center flex-shrink-0`}>
-            <span className="text-white font-bold text-xs">{track.type.toUpperCase()}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-white font-bold text-lg leading-tight">{track.title}</h1>
-            <button
-              onClick={() => navigate(`/${track.artist.replace(/^@/, '')}`)}
-              className="text-cyan-400 text-sm hover:underline text-left"
-            >{track.artist}</button>
-            <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
-              <span>{track.instrument}</span>
-              <span>·</span>
-              <span>{track.genre}</span>
-              <span>·</span>
-              <span>{track.duration}</span>
+    <div className="pb-40 min-h-screen md:pb-8">
+      <div className="md:grid md:grid-cols-[1fr_380px] md:gap-6 md:px-6 md:pt-4 md:items-start">
+
+        {/* Left col: waveform + controls */}
+        <div className="px-4 pt-4 pb-4 border-b border-white/10 md:px-0 md:border-b-0 md:border md:border-white/10 md:rounded-2xl md:p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${typeColors[track.type]} flex items-center justify-center flex-shrink-0`}>
+              <span className="text-white font-bold text-xs">{track.type.toUpperCase()}</span>
             </div>
-          </div>
-        </div>
-
-        <div
-          className={`flex items-end gap-px h-16 cursor-pointer rounded-lg overflow-hidden mb-2 transition-opacity duration-500 ${loadingWaveform ? 'opacity-40' : 'opacity-100'}`}
-          onClick={handleWaveformClick}
-        >
-          {waveform.map((height, i) => {
-            const isPast = i / waveform.length <= progress;
-            return (
-              <div
-                key={i}
-                className={`flex-1 rounded-sm transition-colors ${isPast ? 'bg-cyan-400' : 'bg-white/15'}`}
-                style={{ height: `${height * 100}%` }}
-              />
-            );
-          })}
-        </div>
-        <div className="flex justify-between text-xs text-tertiary mb-3">
-          <span>{formatTime(progress, track.duration)}</span>
-          <span>{track.duration}</span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handlePlay}
-            className="w-12 h-12 rounded-full gradient-cyan-lime flex items-center justify-center shadow-md"
-          >
-            {isCurrentPlaying ? <Pause className="w-5 h-5 text-navy-900" /> : <Play className="w-5 h-5 text-navy-900 ml-0.5" />}
-          </button>
-
-          <button
-            onClick={() => navigate('/grabar', {
-              state: {
-                sourceAudio: {
-                  pkId: track.pkId,
-                  slug: track.id,
-                  name: track.title,
-                  username: track.artist.replace(/^@/, ''),
-                  audioUrl: track.audioUrl,
-                },
-              },
-            })}
-            className="flex-1 py-3 rounded-xl gradient-cyan-lime text-navy-900 font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-md shadow-cyan-500/20"
-          >
-            <GitBranch className="w-4 h-4" />
-            Colaborar
-          </button>
-
-          <button onClick={() => setLiked(l => !l)} className={`w-10 h-10 rounded-xl flex items-center justify-center ${liked ? 'bg-rose-500/20' : 'bg-white/5'}`}>
-            <Heart className={`w-5 h-5 ${liked ? 'text-rose-400 fill-rose-400' : 'text-gray-400'}`} />
-          </button>
-          <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-            <Share2 className="w-5 h-5 text-gray-400" />
-          </button>
-          <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-            <Download className="w-5 h-5 text-gray-400" />
-          </button>
-          <button
-            onClick={() => setAgentPanelOpen(true)}
-            className="w-10 h-10 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/30 flex items-center justify-center hover:bg-fuchsia-500/25 transition-colors"
-          >
-            <Sparkles className="w-5 h-5 text-fuchsia-400" />
-          </button>
-        </div>
-
-        <div className="flex gap-4 mt-3 text-xs text-tertiary">
-          {(track.collaborations || 0) > 0 && (
-            <span className="text-cyan-400">{track.collaborations} colaboraciones</span>
-          )}
-          <span>CC BY-SA</span>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-white/10">
-        {(['historia', 'comentarios', 'info'] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 py-3 text-sm font-medium transition-colors capitalize relative ${
-              tab === t ? 'text-cyan-400' : 'text-tertiary'
-            }`}
-          >
-            {t}
-            {tab === t && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full gradient-cyan-lime" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <div className="px-4 pt-4">
-        {tab === 'historia' && (
-          <div>
-            {loadingTree ? (
-              <div className="py-8 text-center text-sm text-tertiary">Cargando árbol...</div>
-            ) : !collabRoot ? (
-              <div className="py-8 text-center text-sm text-tertiary">Sin colaboraciones todavía.</div>
-            ) : (
-              <>
-                <p className="text-xs text-tertiary mb-4">
-                  Árbol de colaboraciones — {countNodes(collabRoot) - 1} derivaciones
-                </p>
-                <CollabTreeNode node={collabRoot} depth={0} currentSlug={slug!} />
-              </>
-            )}
-          </div>
-        )}
-
-        {tab === 'comentarios' && (
-          <div className="space-y-4">
-            <p className="text-xs text-tertiary">Los comentarios son permanentes y forman la historia del audio.</p>
-
-            {loadingComments ? (
-              <div className="py-8 text-center text-sm text-tertiary">Cargando comentarios...</div>
-            ) : comments.length === 0 ? (
-              <div className="py-8 text-center text-sm text-tertiary">Todavía no hay comentarios. Sé el primero.</div>
-            ) : (
-              comments.map(c => {
-                const isAuthor = user?.username === c.user.username;
-                return (
-                  <div key={c.id} className={`p-3 rounded-xl ${isAuthor ? 'bg-cyan-500/5 border border-cyan-500/20' : 'bg-white/5'}`}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      {c.user.avatar_url ? (
-                        <img src={c.user.avatar_url} alt={c.user.username} className="w-6 h-6 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-secondary">
-                          {c.user.username[0].toUpperCase()}
-                        </div>
-                      )}
-                      <span className={`text-sm font-medium ${isAuthor ? 'text-cyan-400' : 'text-white'}`}>
-                        @{c.user.username}
-                      </span>
-                      {isAuthor && <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">autor</span>}
-                      <span className="text-xs text-tertiary ml-auto">{timeAgo(c.created_at)}</span>
-                    </div>
-                    <div
-                      className="text-sm text-gray-300 [&_a]:text-cyan-400 [&_a]:hover:underline"
-                      dangerouslySetInnerHTML={{ __html: c.msg_html }}
-                      onClick={handleMsgHtmlClick}
-                    />
-                  </div>
-                );
-              })
-            )}
-
-            <div className="mt-4 space-y-2">
-              <textarea
-                value={commentInput}
-                onChange={e => setCommentInput(e.target.value)}
-                placeholder="Comentá, mencioná con @ o taggeá con #"
-                rows={2}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-tertiary focus:outline-none focus:border-cyan-500/50 resize-none"
-              />
-              {commentError && <p className="text-xs text-error">{commentError}</p>}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-white font-bold text-lg leading-tight">{track.title}</h1>
               <button
-                onClick={() => {
-                  if (!user) { openLoginModal(() => handlePostComment()); return; }
-                  handlePostComment();
-                }}
-                disabled={!commentInput.trim() || postingComment}
-                className="px-5 py-2 rounded-xl gradient-cyan-lime text-navy-900 font-semibold text-sm disabled:opacity-40"
-              >
-                {postingComment ? 'Publicando...' : 'Comentar'}
-              </button>
+                onClick={() => navigate(`/${track.artist.replace(/^@/, '')}`)}
+                className="text-cyan-400 text-sm hover:underline text-left"
+              >{track.artist}</button>
+              <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
+                <span>{track.instrument}</span>
+                <span>·</span>
+                <span>{track.genre}</span>
+                <span>·</span>
+                <span>{track.duration}</span>
+              </div>
             </div>
           </div>
-        )}
 
-        {tab === 'info' && (
-          <div className="space-y-3">
-            {[
-              { label: 'Instrumento', value: track.instrument },
-              { label: 'Género', value: track.genre },
-              { label: 'Tipo', value: track.type },
-              { label: 'Duración', value: track.duration },
-              { label: 'Licencia', value: 'Creative Commons BY-SA 4.0' },
-            ].filter(row => row.value).map(({ label, value }) => (
-              <div key={label} className="flex justify-between py-2 border-b border-white/5">
-                <span className="text-sm text-tertiary">{label}</span>
-                <span className="text-sm text-white">{value}</span>
-              </div>
-            ))}
-            <div className="pt-2">
-              <span className="text-sm text-tertiary block mb-2">Tags</span>
-              <div className="flex flex-wrap gap-2">
-                {track.tags.map(tag => (
-                  <span key={tag} className="px-2.5 py-1 rounded-full bg-white/5 text-xs text-secondary">#{tag}</span>
-                ))}
-              </div>
-            </div>
+          <div
+            className={`flex items-end gap-px h-16 cursor-pointer rounded-lg overflow-hidden mb-2 transition-opacity duration-500 ${loadingWaveform ? 'opacity-40' : 'opacity-100'}`}
+            onClick={handleWaveformClick}
+          >
+            {waveform.map((height, i) => {
+              const isPast = i / waveform.length <= progress;
+              return (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-sm transition-colors ${isPast ? 'bg-cyan-400' : 'bg-white/15'}`}
+                  style={{ height: `${height * 100}%` }}
+                />
+              );
+            })}
           </div>
-        )}
+          <div className="flex justify-between text-xs text-tertiary mb-3">
+            <span>{formatTime(progress, track.duration)}</span>
+            <span>{track.duration}</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handlePlay}
+              className="w-12 h-12 rounded-full gradient-cyan-lime flex items-center justify-center shadow-md"
+            >
+              {isCurrentPlaying ? <Pause className="w-5 h-5 text-navy-900" /> : <Play className="w-5 h-5 text-navy-900 ml-0.5" />}
+            </button>
+
+            <button
+              onClick={() => navigate('/grabar', {
+                state: {
+                  sourceAudio: {
+                    pkId: track.pkId,
+                    slug: track.id,
+                    name: track.title,
+                    username: track.artist.replace(/^@/, ''),
+                    audioUrl: track.audioUrl,
+                  },
+                },
+              })}
+              className="flex-1 py-3 rounded-xl gradient-cyan-lime text-navy-900 font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-md shadow-cyan-500/20"
+            >
+              <GitBranch className="w-4 h-4" />
+              Colaborar
+            </button>
+
+            <button onClick={() => setLiked(l => !l)} className={`w-10 h-10 rounded-xl flex items-center justify-center ${liked ? 'bg-rose-500/20' : 'bg-white/5'}`}>
+              <Heart className={`w-5 h-5 ${liked ? 'text-rose-400 fill-rose-400' : 'text-gray-400'}`} />
+            </button>
+            <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+              <Share2 className="w-5 h-5 text-gray-400" />
+            </button>
+            <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+              <Download className="w-5 h-5 text-gray-400" />
+            </button>
+            <button
+              onClick={() => setAgentPanelOpen(true)}
+              className="w-10 h-10 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/30 flex items-center justify-center hover:bg-fuchsia-500/25 transition-colors"
+            >
+              <Sparkles className="w-5 h-5 text-fuchsia-400" />
+            </button>
+          </div>
+
+          <div className="flex gap-4 mt-3 text-xs text-tertiary">
+            {(track.collaborations || 0) > 0 && (
+              <span className="text-cyan-400">{track.collaborations} colaboraciones</span>
+            )}
+            <span>CC BY-SA</span>
+          </div>
+        </div>
+
+        {/* Right col: tabs (sticky on desktop) */}
+        <div className="md:sticky md:top-20 md:self-start md:max-h-[calc(100vh-120px)] md:overflow-y-auto md:rounded-2xl md:border md:border-white/10">
+          {/* Tabs bar */}
+          <div className="flex border-b border-white/10">
+            {(['historia', 'comentarios', 'info'] as Tab[]).map(t => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 py-3 text-sm font-medium transition-colors capitalize relative ${
+                  tab === t ? 'text-cyan-400' : 'text-tertiary'
+                }`}
+              >
+                {t}
+                {tab === t && (
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full gradient-cyan-lime" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="px-4 pt-4">
+            {tab === 'historia' && (
+              <div>
+                {loadingTree ? (
+                  <div className="py-8 text-center text-sm text-tertiary">Cargando árbol...</div>
+                ) : !collabRoot ? (
+                  <div className="py-8 text-center text-sm text-tertiary">Sin colaboraciones todavía.</div>
+                ) : (
+                  <>
+                    <p className="text-xs text-tertiary mb-4">
+                      Árbol de colaboraciones — {countNodes(collabRoot) - 1} derivaciones
+                    </p>
+                    <CollabTreeNode node={collabRoot} depth={0} currentSlug={slug!} />
+                  </>
+                )}
+              </div>
+            )}
+
+            {tab === 'comentarios' && (
+              <div className="space-y-4">
+                <p className="text-xs text-tertiary">Los comentarios son permanentes y forman la historia del audio.</p>
+
+                {loadingComments ? (
+                  <div className="py-8 text-center text-sm text-tertiary">Cargando comentarios...</div>
+                ) : comments.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-tertiary">Todavía no hay comentarios. Sé el primero.</div>
+                ) : (
+                  comments.map(c => {
+                    const isAuthor = user?.username === c.user.username;
+                    return (
+                      <div key={c.id} className={`p-3 rounded-xl ${isAuthor ? 'bg-cyan-500/5 border border-cyan-500/20' : 'bg-white/5'}`}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          {c.user.avatar_url ? (
+                            <img src={c.user.avatar_url} alt={c.user.username} className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-secondary">
+                              {c.user.username[0].toUpperCase()}
+                            </div>
+                          )}
+                          <span className={`text-sm font-medium ${isAuthor ? 'text-cyan-400' : 'text-white'}`}>
+                            @{c.user.username}
+                          </span>
+                          {isAuthor && <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">autor</span>}
+                          <span className="text-xs text-tertiary ml-auto">{timeAgo(c.created_at)}</span>
+                        </div>
+                        <div
+                          className="text-sm text-gray-300 [&_a]:text-cyan-400 [&_a]:hover:underline"
+                          dangerouslySetInnerHTML={{ __html: c.msg_html }}
+                          onClick={handleMsgHtmlClick}
+                        />
+                      </div>
+                    );
+                  })
+                )}
+
+                <div className="mt-4 space-y-2">
+                  <textarea
+                    value={commentInput}
+                    onChange={e => setCommentInput(e.target.value)}
+                    placeholder="Comentá, mencioná con @ o taggeá con #"
+                    rows={2}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-tertiary focus:outline-none focus:border-cyan-500/50 resize-none"
+                  />
+                  {commentError && <p className="text-xs text-error">{commentError}</p>}
+                  <button
+                    onClick={() => {
+                      if (!user) { openLoginModal(() => handlePostComment()); return; }
+                      handlePostComment();
+                    }}
+                    disabled={!commentInput.trim() || postingComment}
+                    className="px-5 py-2 rounded-xl gradient-cyan-lime text-navy-900 font-semibold text-sm disabled:opacity-40"
+                  >
+                    {postingComment ? 'Publicando...' : 'Comentar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tab === 'info' && (
+              <div className="space-y-3">
+                {[
+                  { label: 'Instrumento', value: track.instrument },
+                  { label: 'Género', value: track.genre },
+                  { label: 'Tipo', value: track.type },
+                  { label: 'Duración', value: track.duration },
+                  { label: 'Licencia', value: 'Creative Commons BY-SA 4.0' },
+                ].filter(row => row.value).map(({ label, value }) => (
+                  <div key={label} className="flex justify-between py-2 border-b border-white/5">
+                    <span className="text-sm text-tertiary">{label}</span>
+                    <span className="text-sm text-white">{value}</span>
+                  </div>
+                ))}
+                <div className="pt-2">
+                  <span className="text-sm text-tertiary block mb-2">Tags</span>
+                  <div className="flex flex-wrap gap-2">
+                    {track.tags.map(tag => (
+                      <span key={tag} className="px-2.5 py-1 rounded-full bg-white/5 text-xs text-secondary">#{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* Agent Panel */}

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 
 import { Header } from '@/components/Header';
 import { SideMenu } from '@/components/SideMenu';
+import { DesktopSidebar } from '@/components/DesktopSidebar';
 import { BottomNav } from '@/components/BottomNav';
 import { Player } from '@/components/Player';
 import { RecordFAB } from '@/components/RecordFAB';
@@ -20,8 +21,11 @@ function Layout() {
     <div className="min-h-screen bg-navy-900">
       <Header />
       <SideMenu />
-      <main className="pt-16">
-        <Outlet />
+      <DesktopSidebar />
+      <main className="pt-16 md:ml-56">
+        <div className="md:max-w-3xl md:mx-auto">
+          <Outlet />
+        </div>
       </main>
       <Player />
       <RecordFAB />
