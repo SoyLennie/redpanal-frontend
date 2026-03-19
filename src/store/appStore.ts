@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { AudioTrack } from '@/types';
 
+export type PlayerState = 'mini' | 'half' | 'full';
+
 interface AuthUser {
   id: number;
   username: string;
@@ -11,7 +13,7 @@ interface AppStore {
   menuOpen: boolean;
   currentTrack: AudioTrack | null;
   isPlaying: boolean;
-  playerExpanded: boolean;
+  playerState: PlayerState;
   queue: AudioTrack[];
   progress: number;
   user: AuthUser | null;
@@ -22,8 +24,7 @@ interface AppStore {
   closeMenu: () => void;
   playTrack: (track: AudioTrack, contextQueue?: AudioTrack[]) => void;
   togglePlay: () => void;
-  expandPlayer: () => void;
-  collapsePlayer: () => void;
+  setPlayerState: (state: PlayerState) => void;
   setProgress: (p: number) => void;
   nextTrack: () => void;
   prevTrack: () => void;
@@ -37,7 +38,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   menuOpen: false,
   currentTrack: null,
   isPlaying: false,
-  playerExpanded: false,
+  playerState: 'mini',
   queue: [],
   progress: 0,
   user: (() => {
@@ -49,17 +50,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   toggleMenu: () => set((s) => ({ menuOpen: !s.menuOpen })),
   closeMenu: () => set({ menuOpen: false }),
-  
+
   playTrack: (track, contextQueue = []) => {
     const q = contextQueue.filter(t => t.id !== track.id);
     set({ currentTrack: track, isPlaying: true, queue: q, progress: 0 });
   },
-  
+
   togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
-  expandPlayer: () => set({ playerExpanded: true }),
-  collapsePlayer: () => set({ playerExpanded: false }),
+  setPlayerState: (state) => set({ playerState: state }),
   setProgress: (p) => set({ progress: p }),
-  
+
   nextTrack: () => {
     const { queue } = get();
     if (queue.length > 0) {
@@ -67,7 +67,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({ currentTrack: next, queue: rest, isPlaying: true, progress: 0 });
     }
   },
-  
+
   prevTrack: () => {
     set({ progress: 0 });
   },

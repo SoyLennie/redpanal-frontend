@@ -23,9 +23,7 @@ function Layout() {
       <SideMenu />
       <DesktopSidebar />
       <main className="pt-16 md:ml-56">
-        <div className="md:max-w-3xl md:mx-auto">
-          <Outlet />
-        </div>
+        <Outlet />
       </main>
       <Player />
       <RecordFAB />
